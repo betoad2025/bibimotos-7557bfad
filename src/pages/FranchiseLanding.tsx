@@ -14,6 +14,7 @@ import {
   Shield,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
   Phone,
   Mail,
   MessageCircle,
@@ -37,10 +38,11 @@ import {
   Lock,
   Sparkles,
   Timer,
-  Gift
+  Gift,
+  ExternalLink
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import logoImage from "@/assets/logo-simbolo.png";
 
@@ -89,9 +91,12 @@ export default function FranchiseLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [showCities, setShowCities] = useState(false);
   const [leadForm, setLeadForm] = useState({ name: '', phone: '', email: '', city: '', state: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -104,6 +109,11 @@ export default function FranchiseLanding() {
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     setMobileMenuOpen(false);
+  };
+
+  const handleCityClick = (city: typeof operatingCities[0]) => {
+    // TODO: Navegar para a página da cidade (subdomínio)
+    window.open(`https://${city.subdomain}.bibimotos.com.br`, '_blank');
   };
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
@@ -130,6 +140,58 @@ export default function FranchiseLanding() {
     { label: 'Como Funciona', id: 'como-funciona' },
     { label: 'Investimento', id: 'investimento' },
     { label: 'FAQ', id: 'faq' },
+  ];
+
+  const advantages = [
+    {
+      icon: Percent,
+      title: "Zero Comissão",
+      description: "Não cobramos porcentagem sobre suas corridas. O faturamento é 100% seu.",
+      highlight: true,
+      color: "from-emerald-400 to-green-500",
+      bgColor: "bg-gradient-to-br from-emerald-50 to-green-50",
+      borderColor: "border-emerald-200"
+    },
+    {
+      icon: Building2,
+      title: "Painel Administrativo Próprio",
+      description: "Sistema completo e independente para gerenciar motoristas, corridas e finanças.",
+      color: "from-purple-400 to-purple-600",
+      bgColor: "bg-gradient-to-br from-purple-50 to-indigo-50",
+      borderColor: "border-purple-200"
+    },
+    {
+      icon: DollarSign,
+      title: "Mensalidade Acessível",
+      description: "Valor fixo mensal muito abaixo do mercado. Sem surpresas, sem taxas escondidas.",
+      color: "from-blue-400 to-blue-600",
+      bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50",
+      borderColor: "border-blue-200"
+    },
+    {
+      icon: HeadphonesIcon,
+      title: "Suporte Completo",
+      description: "Equipe dedicada para te ajudar em tudo: implantação, operação e crescimento.",
+      color: "from-orange-400 to-orange-600",
+      bgColor: "bg-gradient-to-br from-orange-50 to-amber-50",
+      borderColor: "border-orange-200"
+    },
+    {
+      icon: Video,
+      title: "Marketing Incluso",
+      description: "Acesso a vídeos, artes, criativos e estratégias prontas para você usar.",
+      color: "from-pink-400 to-rose-500",
+      bgColor: "bg-gradient-to-br from-pink-50 to-rose-50",
+      borderColor: "border-pink-200"
+    },
+    {
+      icon: Rocket,
+      title: "Implantação em 7 Dias",
+      description: "Da assinatura ao lançamento em apenas uma semana. Suporte total no processo.",
+      color: "from-amber-400 to-yellow-500",
+      bgColor: "bg-gradient-to-br from-amber-50 to-yellow-50",
+      borderColor: "border-amber-200"
+    }
   ];
 
   return (
@@ -299,7 +361,7 @@ export default function FranchiseLanding() {
                 <div className="absolute -inset-4 bg-gradient-to-br from-yellow-400/20 to-purple-600/20 rounded-3xl blur-2xl"></div>
                 
                 <div className="relative grid gap-4">
-                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6">
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6 rounded-2xl hover:scale-[1.02] transition-transform">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl bg-yellow-400 flex items-center justify-center">
                         <MapPin className="h-7 w-7 text-purple-900" />
@@ -311,7 +373,7 @@ export default function FranchiseLanding() {
                     </div>
                   </Card>
 
-                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6">
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6 rounded-2xl hover:scale-[1.02] transition-transform">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl bg-green-400 flex items-center justify-center">
                         <TrendingUp className="h-7 w-7 text-green-900" />
@@ -323,7 +385,7 @@ export default function FranchiseLanding() {
                     </div>
                   </Card>
 
-                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6">
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6 rounded-2xl hover:scale-[1.02] transition-transform">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl bg-purple-400 flex items-center justify-center">
                         <Percent className="h-7 w-7 text-purple-900" />
@@ -335,7 +397,7 @@ export default function FranchiseLanding() {
                     </div>
                   </Card>
 
-                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6">
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 text-white p-6 rounded-2xl hover:scale-[1.02] transition-transform">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl bg-blue-400 flex items-center justify-center">
                         <Calendar className="h-7 w-7 text-blue-900" />
@@ -360,30 +422,31 @@ export default function FranchiseLanding() {
       </section>
 
       {/* PROVA SOCIAL - Cidades Operando */}
-      <section className="py-12 bg-gradient-to-r from-purple-900 to-purple-800 border-y border-purple-700">
+      <section className="py-8 bg-gradient-to-r from-purple-900 to-purple-800 border-y border-purple-700">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-4 text-white">
             <span className="text-purple-300 font-medium">Já operando em:</span>
             <div className="flex flex-wrap justify-center gap-2">
               {operatingCities.map((city) => (
-                <span
+                <button
                   key={city.id}
-                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors flex items-center gap-2"
+                  onClick={() => handleCityClick(city)}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-sm font-medium transition-all hover:scale-105 flex items-center gap-2"
                 >
                   <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
                   {city.name}/{city.state}
-                </span>
+                </button>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* VANTAGENS EXCLUSIVAS */}
-      <section id="vantagens" className="py-24 bg-gradient-to-b from-background to-purple-50/50">
+      {/* VANTAGENS EXCLUSIVAS - Redesign mais dinâmico */}
+      <section id="vantagens" className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200">Por Que Escolher</Badge>
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300">Por Que Escolher</Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
               A Franquia Que <span className="text-purple-600">Mais Entrega</span>
             </h2>
@@ -393,82 +456,77 @@ export default function FranchiseLanding() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {[
-              {
-                icon: Percent,
-                title: "Zero Comissão",
-                description: "Não cobramos porcentagem sobre suas corridas. O faturamento é 100% seu.",
-                highlight: true,
-                color: "from-green-500 to-emerald-600"
-              },
-              {
-                icon: Building2,
-                title: "Painel Administrativo Próprio",
-                description: "Sistema completo e independente para gerenciar motoristas, corridas e finanças.",
-                color: "from-purple-500 to-purple-600"
-              },
-              {
-                icon: DollarSign,
-                title: "Mensalidade Acessível",
-                description: "Valor fixo mensal muito abaixo do mercado. Sem surpresas, sem taxas escondidas.",
-                color: "from-blue-500 to-blue-600"
-              },
-              {
-                icon: HeadphonesIcon,
-                title: "Suporte Completo",
-                description: "Equipe dedicada para te ajudar em tudo: implantação, operação e crescimento.",
-                color: "from-orange-500 to-orange-600"
-              },
-              {
-                icon: Video,
-                title: "Marketing Incluso",
-                description: "Acesso a vídeos, artes, criativos e estratégias prontas para você usar.",
-                color: "from-pink-500 to-pink-600"
-              },
-              {
-                icon: Rocket,
-                title: "Implantação em 7 Dias",
-                description: "Da assinatura ao lançamento em apenas uma semana. Suporte total no processo.",
-                color: "from-yellow-500 to-yellow-600"
-              }
-            ].map((item, index) => (
+            {advantages.map((item, index) => (
               <Card 
                 key={index} 
-                className={`border-2 hover:shadow-xl transition-all duration-300 group ${item.highlight ? 'border-green-300 bg-green-50/50' : ''}`}
+                className={`relative overflow-hidden border-2 transition-all duration-500 cursor-pointer group ${item.bgColor} ${item.borderColor} hover:shadow-2xl hover:-translate-y-2 rounded-3xl`}
+                onMouseEnter={() => setHoveredCard(index)}
+                onMouseLeave={() => setHoveredCard(null)}
               >
-                <CardContent className="p-6">
-                  <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-                    <item.icon className="h-7 w-7 text-white" />
+                {/* Animated background gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                
+                {/* Floating particles effect */}
+                <div className="absolute top-4 right-4 w-20 h-20 rounded-full bg-gradient-to-br from-white/40 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                <CardContent className="p-8 relative z-10">
+                  <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                    <item.icon className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                  <h3 className="text-xl font-bold mb-3 group-hover:text-purple-700 transition-colors">{item.title}</h3>
                   <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                  
+                  {/* Hover indicator */}
+                  <div className="mt-4 flex items-center text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-sm font-medium">Saiba mais</span>
+                    <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </CardContent>
+                
+                {item.highlight && (
+                  <div className="absolute top-4 right-4">
+                    <Badge className="bg-green-500 text-white border-0 shadow-lg animate-pulse">
+                      Destaque
+                    </Badge>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
 
-          {/* Diferencial */}
-          <div className="mt-16 max-w-4xl mx-auto">
-            <Card className="bg-gradient-to-r from-purple-600 to-purple-800 text-white border-0 overflow-hidden">
-              <CardContent className="p-8 md:p-12 relative">
+          {/* Diferencial - Design mais compacto */}
+          <div className="mt-12 max-w-4xl mx-auto">
+            <Card className="bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 text-white border-0 overflow-hidden rounded-3xl">
+              <CardContent className="p-8 md:p-10 relative">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl"></div>
-                <div className="relative z-10 text-center space-y-6">
-                  <Crown className="h-16 w-16 mx-auto text-yellow-400" />
-                  <h3 className="text-2xl md:text-3xl font-bold">
-                    Você é o Dono, Não um Parceiro
-                  </h3>
-                  <p className="text-lg text-purple-100 max-w-2xl mx-auto">
-                    Em outras franquias você paga royalties, comissões e taxas que comem seu lucro. 
-                    Na Bibi Motos, você paga apenas a mensalidade fixa e fica com <strong className="text-yellow-400">100% do faturamento</strong>.
-                  </p>
-                  <Button 
-                    size="lg" 
-                    className="bg-yellow-400 hover:bg-yellow-500 text-purple-900 font-bold mt-4"
-                    onClick={() => scrollToSection('contato')}
-                  >
-                    Quero Ser Dono da Minha Cidade
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-400/20 rounded-full blur-2xl"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                  <div className="flex-shrink-0">
+                    <div className="h-20 w-20 rounded-2xl bg-yellow-400 flex items-center justify-center shadow-2xl animate-float">
+                      <Crown className="h-10 w-10 text-purple-900" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-2xl md:text-3xl font-bold mb-3">
+                      Você é o Dono, Não um Parceiro
+                    </h3>
+                    <p className="text-purple-100 max-w-xl">
+                      Em outras franquias você paga royalties e comissões. Na Bibi Motos, você paga apenas a mensalidade fixa e fica com <strong className="text-yellow-400">100% do faturamento</strong>.
+                    </p>
+                  </div>
+                  
+                  <div className="flex-shrink-0">
+                    <Button 
+                      size="lg" 
+                      className="bg-yellow-400 hover:bg-yellow-500 text-purple-900 font-bold shadow-xl hover:shadow-2xl transition-all"
+                      onClick={() => scrollToSection('contato')}
+                    >
+                      Quero Ser Dono
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -476,11 +534,11 @@ export default function FranchiseLanding() {
         </div>
       </section>
 
-      {/* CIDADES DISPONÍVEIS */}
-      <section id="cidades" className="py-24 bg-background">
+      {/* CIDADES DISPONÍVEIS - Redesign com expansão */}
+      <section id="cidades" className="py-20 bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-yellow-100 text-yellow-700 border-yellow-200">Oportunidade</Badge>
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300">Oportunidade</Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
               <span className="text-purple-600">5.570 Cidades</span> Esperando por Você
             </h2>
@@ -489,60 +547,124 @@ export default function FranchiseLanding() {
             </p>
           </div>
 
-          {/* Cidades Já Operando */}
-          <div className="mb-16">
-            <h3 className="text-xl font-bold text-center mb-8 flex items-center justify-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
-              Cidades Já Operando ({operatingCities.length})
-            </h3>
-            <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
-              {operatingCities.map((city) => (
-                <span
-                  key={city.id}
-                  className="px-4 py-2 rounded-lg bg-green-100 hover:bg-green-200 text-green-800 font-medium transition-colors flex items-center gap-2 text-sm"
-                >
-                  <MapPin className="h-4 w-4" />
-                  {city.name}/{city.state}
-                </span>
-              ))}
-            </div>
+          {/* Card de Cidades Operando - Expansível */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 overflow-hidden rounded-2xl">
+              <button
+                onClick={() => setShowCities(!showCities)}
+                className="w-full p-6 flex items-center justify-between hover:bg-green-100/50 dark:hover:bg-green-900/20 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
+                    <MapPin className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
+                      Cidades Já Operando
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {operatingCities.length} cidades ativas com franqueados
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-green-500 text-white border-0 text-lg px-4 py-1">
+                    {operatingCities.length}
+                  </Badge>
+                  {showCities ? (
+                    <ChevronUp className="h-6 w-6 text-green-600" />
+                  ) : (
+                    <ChevronDown className="h-6 w-6 text-green-600" />
+                  )}
+                </div>
+              </button>
+              
+              {showCities && (
+                <div className="px-6 pb-6 border-t border-green-200 pt-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {operatingCities.map((city) => (
+                      <button
+                        key={city.id}
+                        onClick={() => handleCityClick(city)}
+                        className="group p-4 rounded-xl bg-white dark:bg-gray-800 hover:bg-green-100 dark:hover:bg-green-900/30 border-2 border-green-200 hover:border-green-400 transition-all hover:shadow-lg text-center"
+                      >
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                          <span className="text-xs text-green-600 font-medium">ATIVA</span>
+                        </div>
+                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-green-700">{city.name}</p>
+                        <p className="text-sm text-muted-foreground">{city.state}</p>
+                        <div className="mt-2 flex items-center justify-center text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ExternalLink className="h-4 w-4" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
           </div>
 
-          {/* Estados Disponíveis */}
+          {/* Estados Disponíveis - Redesign */}
           <div className="max-w-5xl mx-auto">
-            <h3 className="text-xl font-bold text-center mb-8">
-              Cidades Disponíveis por Estado
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-bold flex items-center justify-center gap-2">
+                <Globe className="h-5 w-5 text-purple-600" />
+                Cidades Disponíveis por Estado
+              </h3>
+              <p className="text-muted-foreground mt-2">Clique em um estado para ver as oportunidades</p>
+            </div>
+            
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
               {BRAZILIAN_STATES.map((state) => {
                 const citiesInState = operatingCities.filter(c => c.state === state.uf).length;
                 const available = state.cities - citiesInState;
+                const isSelected = selectedState === state.uf;
+                
                 return (
                   <button
                     key={state.uf}
-                    onClick={() => setSelectedState(selectedState === state.uf ? null : state.uf)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all hover:shadow-lg ${
-                      selectedState === state.uf 
-                        ? 'border-purple-500 bg-purple-50' 
-                        : 'border-gray-200 hover:border-purple-300'
+                    onClick={() => setSelectedState(isSelected ? null : state.uf)}
+                    className={`p-3 rounded-xl border-2 text-center transition-all hover:shadow-lg ${
+                      isSelected 
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/50 scale-105 shadow-lg' 
+                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
                     }`}
                   >
-                    <p className="font-bold text-lg">{state.uf}</p>
-                    <p className="text-xs text-muted-foreground">{state.name}</p>
-                    <p className="text-sm mt-2">
+                    <p className="font-bold text-xl text-purple-600">{state.uf}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{state.name}</p>
+                    <div className="mt-2 text-xs">
                       <span className="text-green-600 font-bold">{available}</span>
-                      <span className="text-muted-foreground"> disponíveis</span>
-                    </p>
+                      <span className="text-muted-foreground"> disp.</span>
+                    </div>
                   </button>
                 );
               })}
             </div>
+            
+            {selectedState && (
+              <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl border-2 border-purple-200">
+                <p className="text-center text-purple-700 dark:text-purple-300">
+                  <strong>{BRAZILIAN_STATES.find(s => s.uf === selectedState)?.name}</strong> tem{' '}
+                  <strong className="text-green-600">
+                    {BRAZILIAN_STATES.find(s => s.uf === selectedState)!.cities - operatingCities.filter(c => c.state === selectedState).length}
+                  </strong>{' '}
+                  cidades disponíveis para franquia!
+                </p>
+                <div className="text-center mt-3">
+                  <Button onClick={() => scrollToSection('contato')} className="bg-purple-600 hover:bg-purple-700">
+                    Quero Franquear uma Cidade de {selectedState}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-10">
             <Button 
               size="lg" 
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all"
               onClick={() => scrollToSection('contato')}
             >
               <Target className="mr-2 h-5 w-5" />
@@ -553,10 +675,10 @@ export default function FranchiseLanding() {
       </section>
 
       {/* COMO FUNCIONA */}
-      <section id="como-funciona" className="py-24 bg-gradient-to-b from-purple-50 to-background">
+      <section id="como-funciona" className="py-20 bg-gradient-to-b from-purple-50 to-white dark:from-purple-950/20 dark:to-gray-950">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200">Processo Simples</Badge>
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300">Processo Simples</Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Como Funciona</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Em 4 passos você já está operando sua franquia
@@ -590,14 +712,14 @@ export default function FranchiseLanding() {
                 description: "Comece a faturar! Cadastre motoristas, receba corridas e cresça seu negócio."
               }
             ].map((item, index) => (
-              <div key={item.step} className="relative text-center">
+              <div key={item.step} className="relative text-center group">
                 {index < 3 && (
                   <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-purple-400 to-purple-200"></div>
                 )}
                 
                 <div className="relative z-10">
                   <div className="relative mx-auto w-fit mb-6">
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                    <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-2xl shadow-purple-500/30 group-hover:scale-110 transition-transform">
                       <item.icon className="h-10 w-10 text-white" />
                     </div>
                     <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-yellow-400 text-purple-900 flex items-center justify-center font-bold text-sm shadow-lg">
@@ -616,10 +738,10 @@ export default function FranchiseLanding() {
       </section>
 
       {/* INVESTIMENTO */}
-      <section id="investimento" className="py-24 bg-background">
+      <section id="investimento" className="py-20 bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-green-100 text-green-700 border-green-200">Investimento</Badge>
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300">Investimento</Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
               Quanto Custa Ser <span className="text-purple-600">Franqueado</span>
             </h2>
@@ -629,7 +751,7 @@ export default function FranchiseLanding() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <Card className="border-2 border-purple-200 overflow-hidden">
+            <Card className="border-2 border-purple-200 overflow-hidden rounded-2xl">
               <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-8 text-center">
                 <Badge className="bg-yellow-400 text-purple-900 border-0 mb-4">Melhor Custo-Benefício</Badge>
                 <h3 className="text-3xl font-bold mb-2">Franquia Bibi Motos</h3>
@@ -687,7 +809,7 @@ export default function FranchiseLanding() {
                   </div>
                 </div>
 
-                <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl text-center">
+                <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl text-center">
                   <p className="text-sm text-muted-foreground mb-2">Investimento inicial a partir de</p>
                   <p className="text-4xl font-bold text-green-600">Consulte</p>
                   <p className="text-sm text-muted-foreground mt-2">Valores variam de acordo com o tamanho da cidade</p>
@@ -710,10 +832,10 @@ export default function FranchiseLanding() {
       </section>
 
       {/* FAQ - QUEBRA OBJEÇÕES */}
-      <section id="faq" className="py-24 bg-gradient-to-b from-purple-50 to-background">
+      <section id="faq" className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200">Dúvidas</Badge>
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300">Dúvidas</Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Perguntas Frequentes</h2>
             <p className="text-lg text-muted-foreground">Tire todas as suas dúvidas sobre a franquia</p>
           </div>
@@ -755,7 +877,7 @@ export default function FranchiseLanding() {
             ].map((faq, i) => (
               <Card 
                 key={i} 
-                className={`border-2 cursor-pointer transition-all duration-300 ${
+                className={`border-2 cursor-pointer transition-all duration-300 rounded-xl overflow-hidden ${
                   openFaq === i ? 'border-purple-300 shadow-lg' : 'hover:border-purple-200'
                 }`}
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -776,13 +898,13 @@ export default function FranchiseLanding() {
       </section>
 
       {/* FORMULÁRIO DE CONTATO */}
-      <section id="contato" className="py-24 bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 text-white relative overflow-hidden">
+      <section id="contato" className="py-20 bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:60px_60px]"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl"></div>
         
         <div className="container relative mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
+            <div className="text-center mb-10">
               <Badge className="mb-4 bg-yellow-400/20 text-yellow-300 border-yellow-400/30">Últimas Vagas</Badge>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
                 Garanta Sua Cidade Agora
@@ -792,7 +914,7 @@ export default function FranchiseLanding() {
               </p>
             </div>
 
-            <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+            <Card className="bg-white/10 backdrop-blur-xl border-white/20 rounded-2xl">
               <CardContent className="p-8">
                 <form onSubmit={handleLeadSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
@@ -802,7 +924,7 @@ export default function FranchiseLanding() {
                         placeholder="Seu nome"
                         value={leadForm.name}
                         onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl"
                       />
                     </div>
                     <div className="space-y-2">
@@ -811,7 +933,7 @@ export default function FranchiseLanding() {
                         placeholder="(00) 00000-0000"
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl"
                       />
                     </div>
                   </div>
@@ -823,7 +945,7 @@ export default function FranchiseLanding() {
                       placeholder="seu@email.com"
                       value={leadForm.email}
                       onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl"
                     />
                   </div>
 
@@ -834,7 +956,7 @@ export default function FranchiseLanding() {
                         placeholder="Nome da cidade"
                         value={leadForm.city}
                         onChange={(e) => setLeadForm({...leadForm, city: e.target.value})}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl"
                       />
                     </div>
                     <div className="space-y-2">
@@ -843,7 +965,7 @@ export default function FranchiseLanding() {
                         placeholder="SP, MG, RJ..."
                         value={leadForm.state}
                         onChange={(e) => setLeadForm({...leadForm, state: e.target.value.toUpperCase().slice(0, 2)})}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 uppercase"
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50 uppercase rounded-xl"
                         maxLength={2}
                       />
                     </div>
@@ -852,7 +974,7 @@ export default function FranchiseLanding() {
                   <Button 
                     type="submit"
                     size="lg" 
-                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-purple-900 font-bold text-lg h-14"
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-purple-900 font-bold text-lg h-14 rounded-xl"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -877,8 +999,8 @@ export default function FranchiseLanding() {
             </Card>
 
             {/* Contato Alternativo */}
-            <div className="mt-12 grid sm:grid-cols-3 gap-6">
-              <Card className="bg-white/10 backdrop-blur border-white/20 text-center">
+            <div className="mt-10 grid sm:grid-cols-3 gap-6">
+              <Card className="bg-white/10 backdrop-blur border-white/20 text-center rounded-xl hover:bg-white/15 transition-colors">
                 <CardContent className="p-6">
                   <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
                     <MessageCircle className="h-6 w-6 text-green-400" />
@@ -888,7 +1010,7 @@ export default function FranchiseLanding() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/10 backdrop-blur border-white/20 text-center">
+              <Card className="bg-white/10 backdrop-blur border-white/20 text-center rounded-xl hover:bg-white/15 transition-colors">
                 <CardContent className="p-6">
                   <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
                     <Phone className="h-6 w-6 text-purple-300" />
@@ -898,7 +1020,7 @@ export default function FranchiseLanding() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/10 backdrop-blur border-white/20 text-center">
+              <Card className="bg-white/10 backdrop-blur border-white/20 text-center rounded-xl hover:bg-white/15 transition-colors">
                 <CardContent className="p-6">
                   <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
                     <Mail className="h-6 w-6 text-blue-300" />
@@ -940,15 +1062,16 @@ export default function FranchiseLanding() {
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-bold text-lg mb-4">Cidades</h4>
+              <h4 className="font-bold text-lg mb-4">Cidades Ativas</h4>
               <div className="space-y-2 text-gray-400">
                 {operatingCities.slice(0, 5).map((city) => (
-                  <span 
+                  <button 
                     key={city.id}
-                    className="block"
+                    onClick={() => handleCityClick(city)}
+                    className="block hover:text-white transition-colors"
                   >
                     {city.name}/{city.state}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
