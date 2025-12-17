@@ -14,16 +14,1030 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          franchise_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          franchise_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          franchise_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          lat: number | null
+          lng: number | null
+          name: string
+          population: number | null
+          state: string
+          subdomain: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          population?: number | null
+          state: string
+          subdomain: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          population?: number | null
+          state?: string
+          subdomain?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          delivery_id: string | null
+          description: string | null
+          driver_id: string
+          franchise_id: string
+          id: string
+          payment_id: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          ride_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          delivery_id?: string | null
+          description?: string | null
+          driver_id: string
+          franchise_id: string
+          id?: string
+          payment_id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          ride_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          delivery_id?: string | null
+          description?: string | null
+          driver_id?: string
+          franchise_id?: string
+          id?: string
+          payment_id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          ride_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deliveries: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_address: string
+          delivery_lat: number
+          delivery_lng: number
+          distance_km: number | null
+          driver_id: string | null
+          estimated_price: number | null
+          final_price: number | null
+          franchise_id: string
+          id: string
+          merchant_id: string | null
+          package_description: string | null
+          package_size: string | null
+          picked_up_at: string | null
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          recipient_name: string | null
+          recipient_phone: string | null
+          status: Database["public"]["Enums"]["delivery_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_address: string
+          delivery_lat: number
+          delivery_lng: number
+          distance_km?: number | null
+          driver_id?: string | null
+          estimated_price?: number | null
+          final_price?: number | null
+          franchise_id: string
+          id?: string
+          merchant_id?: string | null
+          package_description?: string | null
+          package_size?: string | null
+          picked_up_at?: string | null
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          status?: Database["public"]["Enums"]["delivery_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_address?: string
+          delivery_lat?: number
+          delivery_lng?: number
+          distance_km?: number | null
+          driver_id?: string | null
+          estimated_price?: number | null
+          final_price?: number | null
+          franchise_id?: string
+          id?: string
+          merchant_id?: string | null
+          package_description?: string | null
+          package_size?: string | null
+          picked_up_at?: string | null
+          pickup_address?: string
+          pickup_lat?: number
+          pickup_lng?: number
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          status?: Database["public"]["Enums"]["delivery_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliveries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          cnh_back_url: string | null
+          cnh_category: string | null
+          cnh_expiry: string | null
+          cnh_front_url: string | null
+          cnh_number: string | null
+          created_at: string
+          credits: number | null
+          crlv_url: string | null
+          current_lat: number | null
+          current_lng: number | null
+          franchise_id: string
+          id: string
+          is_approved: boolean | null
+          is_online: boolean | null
+          rating: number | null
+          total_rides: number | null
+          updated_at: string
+          user_id: string
+          vehicle_color: string | null
+          vehicle_model: string | null
+          vehicle_plate: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          cnh_back_url?: string | null
+          cnh_category?: string | null
+          cnh_expiry?: string | null
+          cnh_front_url?: string | null
+          cnh_number?: string | null
+          created_at?: string
+          credits?: number | null
+          crlv_url?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          franchise_id: string
+          id?: string
+          is_approved?: boolean | null
+          is_online?: boolean | null
+          rating?: number | null
+          total_rides?: number | null
+          updated_at?: string
+          user_id: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          cnh_back_url?: string | null
+          cnh_category?: string | null
+          cnh_expiry?: string | null
+          cnh_front_url?: string | null
+          cnh_number?: string | null
+          created_at?: string
+          credits?: number | null
+          crlv_url?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          franchise_id?: string
+          id?: string
+          is_approved?: boolean | null
+          is_online?: boolean | null
+          rating?: number | null
+          total_rides?: number | null
+          updated_at?: string
+          user_id?: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      franchise_leads: {
+        Row: {
+          city: string
+          contacted_at: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          city: string
+          contacted_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone: string
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          city?: string
+          contacted_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string
+          state?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      franchises: {
+        Row: {
+          base_price: number | null
+          city_id: string
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          credit_debit_per_ride: number | null
+          driver_fee_amount: number | null
+          driver_fee_type: string | null
+          id: string
+          is_active: boolean | null
+          monthly_fee: number | null
+          name: string
+          owner_id: string | null
+          payment_api_key: string | null
+          payment_gateway: string | null
+          payment_webhook_url: string | null
+          price_per_km: number | null
+          surge_days: string[] | null
+          surge_end_hour: number | null
+          surge_fixed_amount: number | null
+          surge_franchise_percentage: number | null
+          surge_keep_for_franchise: boolean | null
+          surge_percentage: number | null
+          surge_start_hour: number | null
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number | null
+          city_id: string
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          credit_debit_per_ride?: number | null
+          driver_fee_amount?: number | null
+          driver_fee_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_fee?: number | null
+          name: string
+          owner_id?: string | null
+          payment_api_key?: string | null
+          payment_gateway?: string | null
+          payment_webhook_url?: string | null
+          price_per_km?: number | null
+          surge_days?: string[] | null
+          surge_end_hour?: number | null
+          surge_fixed_amount?: number | null
+          surge_franchise_percentage?: number | null
+          surge_keep_for_franchise?: boolean | null
+          surge_percentage?: number | null
+          surge_start_hour?: number | null
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number | null
+          city_id?: string
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          credit_debit_per_ride?: number | null
+          driver_fee_amount?: number | null
+          driver_fee_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_fee?: number | null
+          name?: string
+          owner_id?: string | null
+          payment_api_key?: string | null
+          payment_gateway?: string | null
+          payment_webhook_url?: string | null
+          price_per_km?: number | null
+          surge_days?: string[] | null
+          surge_end_hour?: number | null
+          surge_fixed_amount?: number | null
+          surge_franchise_percentage?: number | null
+          surge_keep_for_franchise?: boolean | null
+          surge_percentage?: number | null
+          surge_start_hour?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchises_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: true
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      known_places: {
+        Row: {
+          address: string
+          category: string | null
+          created_at: string
+          franchise_id: string
+          id: string
+          is_active: boolean | null
+          lat: number
+          lng: number
+          name: string
+        }
+        Insert: {
+          address: string
+          category?: string | null
+          created_at?: string
+          franchise_id: string
+          id?: string
+          is_active?: boolean | null
+          lat: number
+          lng: number
+          name: string
+        }
+        Update: {
+          address?: string
+          category?: string | null
+          created_at?: string
+          franchise_id?: string
+          id?: string
+          is_active?: boolean | null
+          lat?: number
+          lng?: number
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "known_places_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchants: {
+        Row: {
+          business_address: string
+          business_lat: number | null
+          business_lng: number | null
+          business_name: string
+          business_phone: string | null
+          business_type: string | null
+          created_at: string
+          franchise_id: string
+          id: string
+          is_approved: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_address: string
+          business_lat?: number | null
+          business_lng?: number | null
+          business_name: string
+          business_phone?: string | null
+          business_type?: string | null
+          created_at?: string
+          franchise_id: string
+          id?: string
+          is_approved?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_address?: string
+          business_lat?: number | null
+          business_lng?: number | null
+          business_name?: string
+          business_phone?: string | null
+          business_type?: string | null
+          created_at?: string
+          franchise_id?: string
+          id?: string
+          is_approved?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchants_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      neighborhood_stats: {
+        Row: {
+          delivery_count: number | null
+          franchise_id: string
+          id: string
+          neighborhood: string
+          ride_count: number | null
+          total_revenue: number | null
+          updated_at: string
+        }
+        Insert: {
+          delivery_count?: number | null
+          franchise_id: string
+          id?: string
+          neighborhood: string
+          ride_count?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+        }
+        Update: {
+          delivery_count?: number | null
+          franchise_id?: string
+          id?: string
+          neighborhood?: string
+          ride_count?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neighborhood_stats_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passengers: {
+        Row: {
+          created_at: string
+          favorite_addresses: Json | null
+          franchise_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          favorite_addresses?: Json | null
+          franchise_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          favorite_addresses?: Json | null
+          franchise_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passengers_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          cnpj: string | null
+          cpf: string | null
+          created_at: string
+          document_back_url: string | null
+          document_front_url: string | null
+          email: string
+          full_name: string
+          id: string
+          kyc_status: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_verified_at: string | null
+          person_type: Database["public"]["Enums"]["person_type"] | null
+          phone: string | null
+          rg: string | null
+          selfie_url: string | null
+          selfie_with_doc_url: string | null
+          state: string | null
+          state_registration: string | null
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          cnpj?: string | null
+          cpf?: string | null
+          created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
+          email: string
+          full_name: string
+          id?: string
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_verified_at?: string | null
+          person_type?: Database["public"]["Enums"]["person_type"] | null
+          phone?: string | null
+          rg?: string | null
+          selfie_url?: string | null
+          selfie_with_doc_url?: string | null
+          state?: string | null
+          state_registration?: string | null
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          cnpj?: string | null
+          cpf?: string | null
+          created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_verified_at?: string | null
+          person_type?: Database["public"]["Enums"]["person_type"] | null
+          phone?: string | null
+          rg?: string | null
+          selfie_url?: string | null
+          selfie_with_doc_url?: string | null
+          state?: string | null
+          state_registration?: string | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          code: string | null
+          created_at: string
+          description: string | null
+          discount_type: string | null
+          discount_value: number
+          franchise_id: string | null
+          id: string
+          is_active: boolean | null
+          is_global: boolean | null
+          max_uses: number | null
+          min_ride_value: number | null
+          uses_count: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string | null
+          discount_value: number
+          franchise_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          max_uses?: number | null
+          min_ride_value?: number | null
+          uses_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number
+          franchise_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          max_uses?: number | null
+          min_ride_value?: number | null
+          uses_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rides: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          destination_address: string
+          destination_lat: number
+          destination_lng: number
+          discount_amount: number | null
+          distance_km: number | null
+          driver_id: string | null
+          driver_rating: number | null
+          estimated_price: number | null
+          final_price: number | null
+          franchise_id: string
+          id: string
+          is_promotional: boolean | null
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          passenger_id: string | null
+          passenger_rating: number | null
+          promo_code: string | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["ride_status"] | null
+          surge_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          destination_address: string
+          destination_lat: number
+          destination_lng: number
+          discount_amount?: number | null
+          distance_km?: number | null
+          driver_id?: string | null
+          driver_rating?: number | null
+          estimated_price?: number | null
+          final_price?: number | null
+          franchise_id: string
+          id?: string
+          is_promotional?: boolean | null
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          passenger_id?: string | null
+          passenger_rating?: number | null
+          promo_code?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["ride_status"] | null
+          surge_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          destination_address?: string
+          destination_lat?: number
+          destination_lng?: number
+          discount_amount?: number | null
+          distance_km?: number | null
+          driver_id?: string | null
+          driver_rating?: number | null
+          estimated_price?: number | null
+          final_price?: number | null
+          franchise_id?: string
+          id?: string
+          is_promotional?: boolean | null
+          origin_address?: string
+          origin_lat?: number
+          origin_lng?: number
+          passenger_id?: string | null
+          passenger_rating?: number | null
+          promo_code?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["ride_status"] | null
+          surge_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rides_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rides_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rides_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "passengers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_conversations: {
+        Row: {
+          assigned_to: string | null
+          city_identified: string | null
+          created_at: string
+          franchise_id: string | null
+          id: string
+          is_ai_handled: boolean | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          city_identified?: string | null
+          created_at?: string
+          franchise_id?: string | null
+          id?: string
+          is_ai_handled?: boolean | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          city_identified?: string | null
+          created_at?: string
+          franchise_id?: string | null
+          id?: string
+          is_ai_handled?: boolean | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_conversations_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_messages: {
+        Row: {
+          content: string
+          content_type: string | null
+          conversation_id: string
+          created_at: string
+          file_url: string | null
+          id: string
+          is_from_ai: boolean | null
+          sender_id: string | null
+          sender_type: string
+        }
+        Insert: {
+          content: string
+          content_type?: string | null
+          conversation_id: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          is_from_ai?: boolean | null
+          sender_id?: string | null
+          sender_type: string
+        }
+        Update: {
+          content?: string
+          content_type?: string | null
+          conversation_id?: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          is_from_ai?: boolean | null
+          sender_id?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "support_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_franchise_id: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "super_admin"
+        | "franchise_admin"
+        | "driver"
+        | "passenger"
+        | "merchant"
+      delivery_status:
+        | "pending"
+        | "accepted"
+        | "picked_up"
+        | "delivered"
+        | "cancelled"
+      kyc_status: "pending" | "approved" | "rejected"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      person_type: "pf" | "pj"
+      ride_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      service_type: "ride" | "delivery" | "pharmacy"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +1164,32 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "super_admin",
+        "franchise_admin",
+        "driver",
+        "passenger",
+        "merchant",
+      ],
+      delivery_status: [
+        "pending",
+        "accepted",
+        "picked_up",
+        "delivered",
+        "cancelled",
+      ],
+      kyc_status: ["pending", "approved", "rejected"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      person_type: ["pf", "pj"],
+      ride_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      service_type: ["ride", "delivery", "pharmacy"],
+    },
   },
 } as const
