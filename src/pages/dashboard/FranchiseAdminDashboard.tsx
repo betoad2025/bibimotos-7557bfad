@@ -1,0 +1,530 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Bike, Users, TrendingUp, DollarSign, MapPin,
+  Activity, BarChart3, ArrowUpRight, Star, Package,
+  Clock, Bell, LogOut, Settings, CheckCircle2, XCircle,
+  CreditCard, MessageCircle, Percent, Calendar
+} from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import logoImage from "@/assets/logo-simbolo.png";
+
+const COLORS = ['#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6'];
+
+export default function FranchiseAdminDashboard() {
+  const { user, signOut, profile } = useAuth();
+  const [franchise, setFranchise] = useState<any>(null);
+  const [stats, setStats] = useState({
+    totalDrivers: 0,
+    onlineDrivers: 0,
+    pendingApproval: 0,
+    totalRides: 0,
+    todayRides: 0,
+    totalRevenue: 0,
+    todayRevenue: 0,
+    totalPassengers: 0,
+    totalMerchants: 0,
+    avgRating: 4.8,
+  });
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [neighborhoodStats, setNeighborhoodStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  const fetchData = async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch franchise
+      const { data: franchiseData } = await supabase
+        .from('franchises')
+        .select(`*, cities(name, state)`)
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      
+      if (franchiseData) {
+        setFranchise(franchiseData);
+
+        // Fetch drivers for this franchise
+        const { data: driversData } = await supabase
+          .from('drivers')
+          .select(`*, profiles:user_id(full_name, email, phone)`)
+          .eq('franchise_id', franchiseData.id);
+        setDrivers(driversData || []);
+
+        // Fetch rides
+        const { data: ridesData } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('franchise_id', franchiseData.id);
+
+        const today = new Date().toISOString().split('T')[0];
+        const todayRides = ridesData?.filter(r => r.created_at.startsWith(today)) || [];
+        const todayRevenue = todayRides.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0);
+        const totalRevenue = ridesData?.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0) || 0;
+
+        // Fetch passengers count
+        const { count: passengersCount } = await supabase
+          .from('passengers')
+          .select('*', { count: 'exact', head: true })
+          .eq('franchise_id', franchiseData.id);
+
+        // Fetch merchants count
+        const { count: merchantsCount } = await supabase
+          .from('merchants')
+          .select('*', { count: 'exact', head: true })
+          .eq('franchise_id', franchiseData.id);
+
+        // Fetch neighborhood stats
+        const { data: nStats } = await supabase
+          .from('neighborhood_stats')
+          .select('*')
+          .eq('franchise_id', franchiseData.id)
+          .order('ride_count', { ascending: false })
+          .limit(10);
+        setNeighborhoodStats(nStats || []);
+
+        setStats({
+          totalDrivers: driversData?.length || 0,
+          onlineDrivers: driversData?.filter(d => d.is_online).length || 0,
+          pendingApproval: driversData?.filter(d => !d.is_approved).length || 0,
+          totalRides: ridesData?.length || 0,
+          todayRides: todayRides.length,
+          totalRevenue,
+          todayRevenue,
+          totalPassengers: passengersCount || 0,
+          totalMerchants: merchantsCount || 0,
+          avgRating: 4.8,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+    setLoading(false);
+  };
+
+  const chartData = [
+    { name: 'Seg', corridas: 45, entregas: 12 },
+    { name: 'Ter', corridas: 52, entregas: 18 },
+    { name: 'Qua', corridas: 48, entregas: 15 },
+    { name: 'Qui', corridas: 61, entregas: 22 },
+    { name: 'Sex', corridas: 72, entregas: 28 },
+    { name: 'Sáb', corridas: 89, entregas: 35 },
+    { name: 'Dom', corridas: 67, entregas: 24 },
+  ];
+
+  const hourlyData = [
+    { hour: '06h', rides: 12 },
+    { hour: '08h', rides: 34 },
+    { hour: '10h', rides: 28 },
+    { hour: '12h', rides: 45 },
+    { hour: '14h', rides: 32 },
+    { hour: '16h', rides: 38 },
+    { hour: '18h', rides: 56 },
+    { hour: '20h', rides: 42 },
+    { hour: '22h', rides: 25 },
+  ];
+
+  const serviceTypeData = [
+    { name: 'Corridas', value: 65 },
+    { name: 'Entregas', value: 25 },
+    { name: 'Farmácia', value: 10 },
+  ];
+
+  const handleApproveDriver = async (driverId: string) => {
+    await supabase.from('drivers').update({ is_approved: true }).eq('id', driverId);
+    fetchData();
+  };
+
+  if (!franchise) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-bold mb-2">Nenhuma franquia encontrada</h2>
+          <p className="text-muted-foreground">Você ainda não possui uma franquia vinculada.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
+            <div>
+              <h1 className="text-xl font-bold text-purple-700">{franchise.name}</h1>
+              <p className="text-xs text-muted-foreground">
+                {franchise.cities?.name}/{franchise.cities?.state} • Franqueado
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {stats.pendingApproval > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                  {stats.pendingApproval}
+                </span>
+              )}
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Settings className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium">{profile?.full_name}</p>
+                <p className="text-xs text-muted-foreground">Franqueado</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={signOut}>
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="p-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-700 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Bike className="h-8 w-8 opacity-80" />
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                  {stats.onlineDrivers}
+                </div>
+              </div>
+              <p className="text-3xl font-bold mt-2">{stats.totalDrivers}</p>
+              <p className="text-sm opacity-80">Motoristas</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-700 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Activity className="h-8 w-8 opacity-80" />
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <p className="text-3xl font-bold mt-2">{stats.todayRides}</p>
+              <p className="text-sm opacity-80">Corridas Hoje</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-green-700 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <DollarSign className="h-8 w-8 opacity-80" />
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <p className="text-3xl font-bold mt-2">R$ {stats.todayRevenue.toFixed(0)}</p>
+              <p className="text-sm opacity-80">Faturamento Hoje</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Users className="h-8 w-8 opacity-80" />
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <p className="text-3xl font-bold mt-2">{stats.totalPassengers}</p>
+              <p className="text-sm opacity-80">Passageiros</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-500 to-yellow-700 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Star className="h-8 w-8 opacity-80" />
+              </div>
+              <p className="text-3xl font-bold mt-2">{stats.avgRating}</p>
+              <p className="text-sm opacity-80">Avaliação Média</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="drivers">Motoristas</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="config">Configurações</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Charts */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                    Corridas e Entregas (Semana)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="corridas" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="entregas" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                    Corridas por Horário (Hoje)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={hourlyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hour" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="rides" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Neighborhood Stats & Service Types */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-purple-600" />
+                    Top Bairros
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {neighborhoodStats.length > 0 ? (
+                    <div className="space-y-3">
+                      {neighborhoodStats.map((n, i) => (
+                        <div key={n.id} className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-muted-foreground w-6">{i + 1}.</span>
+                          <div className="flex-1">
+                            <p className="font-medium">{n.neighborhood}</p>
+                            <p className="text-xs text-muted-foreground">{n.ride_count} corridas</p>
+                          </div>
+                          <span className="text-green-600 font-bold">R$ {Number(n.total_revenue).toFixed(0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">Sem dados de bairros ainda</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-purple-600" />
+                    Tipos de Serviço
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={serviceTypeData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {serviceTypeData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-center gap-4 mt-4">
+                    {serviceTypeData.map((item, i) => (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                        <span className="text-sm">{item.name} ({item.value}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="drivers" className="space-y-6">
+            {/* Pending Approval */}
+            {stats.pendingApproval > 0 && (
+              <Card className="border-orange-300 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-700">
+                    <Clock className="h-5 w-5" />
+                    Aguardando Aprovação ({stats.pendingApproval})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {drivers.filter(d => !d.is_approved).map((driver) => (
+                      <div key={driver.id} className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                        <div>
+                          <p className="font-medium">{driver.profiles?.full_name || 'Sem nome'}</p>
+                          <p className="text-sm text-muted-foreground">{driver.profiles?.phone}</p>
+                          <p className="text-xs text-muted-foreground">{driver.vehicle_model} - {driver.vehicle_plate}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Rejeitar
+                          </Button>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApproveDriver(driver.id)}>
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Aprovar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* All Drivers */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bike className="h-5 w-5 text-purple-600" />
+                  Todos os Motoristas ({stats.totalDrivers})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {drivers.filter(d => d.is_approved).map((driver) => (
+                    <div key={driver.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-3 w-3 rounded-full ${driver.is_online ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                        <div>
+                          <p className="font-medium">{driver.profiles?.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{driver.vehicle_model} - {driver.vehicle_plate}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                          <span className="font-medium">{Number(driver.rating).toFixed(1)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{driver.total_rides} corridas</p>
+                        <p className="text-sm font-medium text-green-600">R$ {Number(driver.credits).toFixed(2)} créditos</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">Total de Corridas</p>
+                  <p className="text-3xl font-bold text-purple-600">{stats.totalRides}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">Faturamento Total</p>
+                  <p className="text-3xl font-bold text-green-600">R$ {stats.totalRevenue.toFixed(0)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">Ticket Médio</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    R$ {stats.totalRides > 0 ? (stats.totalRevenue / stats.totalRides).toFixed(2) : '0.00'}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">Lojistas</p>
+                  <p className="text-3xl font-bold text-orange-600">{stats.totalMerchants}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="config" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações de Preço</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">Preço Base</p>
+                    <p className="text-2xl font-bold text-purple-600">R$ {Number(franchise.base_price).toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">Preço por KM</p>
+                    <p className="text-2xl font-bold text-purple-600">R$ {Number(franchise.price_per_km).toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">Débito por Corrida</p>
+                    <p className="text-2xl font-bold text-orange-600">R$ {Number(franchise.credit_debit_per_ride).toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">Taxa Dinâmica</p>
+                    <p className="text-2xl font-bold text-green-600">{Number(franchise.surge_percentage)}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-purple-600" />
+                  Gateway de Pagamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Gateway Ativo</p>
+                  <p className="font-bold">{franchise.payment_gateway || 'Não configurado'}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
