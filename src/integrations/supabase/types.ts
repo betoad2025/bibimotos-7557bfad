@@ -1190,6 +1190,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_franchise_payment_settings: {
+        Args: { _franchise_id: string }
+        Returns: {
+          has_api_key: boolean
+          payment_gateway: string
+          payment_webhook_url: string
+        }[]
+      }
       get_user_franchise_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1197,6 +1205,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      set_franchise_payment_settings: {
+        Args: {
+          _franchise_id: string
+          _payment_api_key: string
+          _payment_gateway: string
+          _payment_webhook_url: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
