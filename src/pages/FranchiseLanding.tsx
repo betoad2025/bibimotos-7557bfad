@@ -137,7 +137,7 @@ export default function FranchiseLanding() {
       {/* Header Navigation Premium */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b' 
+          ? 'bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl shadow-lg border-b' 
           : 'bg-transparent'
       }`}>
         <div className="container mx-auto px-4">
@@ -190,7 +190,7 @@ export default function FranchiseLanding() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-t shadow-xl">
+          <div className="lg:hidden bg-white dark:bg-gray-950 border-t shadow-xl">
             <div className="container mx-auto px-4 py-4 space-y-2">
               {menuItems.map((item) => (
                 <button
