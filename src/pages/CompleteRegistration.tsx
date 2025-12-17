@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Camera, FileText, User, Building2, CheckCircle2, ImagePlus } from "lucide-react";
 import logoImage from "@/assets/logo-simbolo.png";
+import { sendWelcomeSMS } from "@/lib/sms";
 
 type PersonType = 'pf' | 'pj';
 type Step = 'type' | 'photo' | 'personal' | 'documents' | 'selfie' | 'review';
@@ -131,6 +132,12 @@ export default function CompleteRegistration() {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Enviar SMS de boas-vindas
+      if (formData.phone) {
+        const userName = profile?.full_name || 'Cliente';
+        sendWelcomeSMS(formData.phone, userName).catch(console.error);
+      }
 
       toast({ title: "Cadastro enviado!", description: "Seus documentos estão em análise." });
       navigate('/dashboard');
