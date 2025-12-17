@@ -259,6 +259,63 @@ export type Database = {
           },
         ]
       }
+      driver_approval_requests: {
+        Row: {
+          created_at: string | null
+          driver_id: string | null
+          extracted_data: Json | null
+          franchise_id: string | null
+          id: string
+          notification_sent: boolean | null
+          notification_sent_at: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          driver_id?: string | null
+          extracted_data?: Json | null
+          franchise_id?: string | null
+          id?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          driver_id?: string | null
+          extracted_data?: Json | null
+          franchise_id?: string | null
+          id?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_approval_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_approval_requests_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           cnh_back_url: string | null
@@ -273,9 +330,13 @@ export type Database = {
           current_lng: number | null
           franchise_id: string
           id: string
+          insurance_document_url: string | null
           is_approved: boolean | null
           is_online: boolean | null
+          motorcycle_photo_url: string | null
+          motorcycle_plate_photo_url: string | null
           rating: number | null
+          registration_complete: boolean | null
           total_rides: number | null
           updated_at: string
           user_id: string
@@ -297,9 +358,13 @@ export type Database = {
           current_lng?: number | null
           franchise_id: string
           id?: string
+          insurance_document_url?: string | null
           is_approved?: boolean | null
           is_online?: boolean | null
+          motorcycle_photo_url?: string | null
+          motorcycle_plate_photo_url?: string | null
           rating?: number | null
+          registration_complete?: boolean | null
           total_rides?: number | null
           updated_at?: string
           user_id: string
@@ -321,9 +386,13 @@ export type Database = {
           current_lng?: number | null
           franchise_id?: string
           id?: string
+          insurance_document_url?: string | null
           is_approved?: boolean | null
           is_online?: boolean | null
+          motorcycle_photo_url?: string | null
+          motorcycle_plate_photo_url?: string | null
           rating?: number | null
+          registration_complete?: boolean | null
           total_rides?: number | null
           updated_at?: string
           user_id?: string
@@ -608,12 +677,102 @@ export type Database = {
           },
         ]
       }
+      notification_blocked_users: {
+        Row: {
+          blocked_by: string
+          created_at: string | null
+          franchise_id: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          blocked_by: string
+          created_at?: string | null
+          franchise_id?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          blocked_by?: string
+          created_at?: string | null
+          franchise_id?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_blocked_users_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_broadcasts: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string
+          franchise_id: string | null
+          html_content: string | null
+          id: string
+          recipient_filter: Json | null
+          recipient_type: string
+          sent_at: string | null
+          sent_count: number | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by: string
+          franchise_id?: string | null
+          html_content?: string | null
+          id?: string
+          recipient_filter?: Json | null
+          recipient_type: string
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          franchise_id?: string | null
+          html_content?: string | null
+          id?: string
+          recipient_filter?: Json | null
+          recipient_type?: string
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_broadcasts_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       passengers: {
         Row: {
           created_at: string
           favorite_addresses: Json | null
           franchise_id: string
           id: string
+          rating: number | null
+          total_rides: number | null
           updated_at: string
           user_id: string
         }
@@ -622,6 +781,8 @@ export type Database = {
           favorite_addresses?: Json | null
           franchise_id: string
           id?: string
+          rating?: number | null
+          total_rides?: number | null
           updated_at?: string
           user_id: string
         }
@@ -630,6 +791,8 @@ export type Database = {
           favorite_addresses?: Json | null
           franchise_id?: string
           id?: string
+          rating?: number | null
+          total_rides?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -979,6 +1142,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_role_preferences: {
+        Row: {
+          id: string
+          selected_role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          selected_role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          selected_role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
