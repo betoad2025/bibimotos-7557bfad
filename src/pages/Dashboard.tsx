@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SuperAdminDashboard from "./dashboard/SuperAdminDashboard";
 import FranchiseAdminDashboard from "./dashboard/FranchiseAdminDashboard";
+import DriverDashboard from "./dashboard/DriverDashboard";
+import PassengerDashboard from "./dashboard/PassengerDashboard";
 
 export default function Dashboard() {
   const { user, loading, roles, isSuperAdmin, isFranchiseAdmin, isDriver, isPassenger, isMerchant } = useAuth();
@@ -36,25 +38,11 @@ export default function Dashboard() {
   }
 
   if (isDriver) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Dashboard do Motorista</h1>
-          <p className="text-muted-foreground">Em desenvolvimento...</p>
-        </div>
-      </div>
-    );
+    return <DriverDashboard />;
   }
 
   if (isPassenger) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Dashboard do Passageiro</h1>
-          <p className="text-muted-foreground">Em desenvolvimento...</p>
-        </div>
-      </div>
-    );
+    return <PassengerDashboard />;
   }
 
   if (isMerchant) {
