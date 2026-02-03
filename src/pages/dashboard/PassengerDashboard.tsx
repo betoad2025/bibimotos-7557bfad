@@ -61,16 +61,37 @@ export default function PassengerDashboard() {
   }, [user]);
 
   const fetchPassengerData = async () => {
-    // Get passenger data - for now we'll use profile data
-    // In a full implementation, this would fetch from passengers table
-    const totalRides = Math.floor(Math.random() * 50) + 1;
-    const rating = 4.5 + Math.random() * 0.5;
+    if (!user) return;
     
-    setPassengerData({
-      id: user?.id || "",
-      rating,
-      total_rides: totalRides,
-    });
+    try {
+      const { data, error } = await supabase
+        .from("passengers")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setPassengerData({
+          id: data.id,
+          rating: Number(data.rating) || 5,
+          total_rides: data.total_rides || 0,
+        });
+      } else {
+        // Se não existe registro de passageiro, usar valores padrão
+        setPassengerData({
+          id: user.id,
+          rating: 5,
+          total_rides: 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching passenger data:", error);
+      setPassengerData({
+        id: user?.id || "",
+        rating: 5,
+        total_rides: 0,
+      });
+    }
   };
 
   const calculatePrice = () => {

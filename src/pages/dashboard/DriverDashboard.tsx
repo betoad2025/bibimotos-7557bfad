@@ -68,15 +68,31 @@ export default function DriverDashboard() {
   }, [user]);
 
   const fetchDriverData = async () => {
-    const { data } = await supabase
-      .from("drivers")
-      .select("*")
-      .eq("user_id", user?.id)
-      .single();
+    if (!user) return;
     
-    if (data) {
-      setDriverData(data);
-      setIsOnline(data.is_online);
+    try {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setDriverData({
+          id: data.id,
+          is_online: data.is_online || false,
+          is_approved: data.is_approved || false,
+          rating: Number(data.rating) || 5,
+          total_rides: data.total_rides || 0,
+          credits: Number(data.credits) || 0,
+          vehicle_model: data.vehicle_model || "",
+          vehicle_plate: data.vehicle_plate || "",
+          vehicle_color: data.vehicle_color || "",
+        });
+        setIsOnline(data.is_online || false);
+      }
+    } catch (error) {
+      console.error("Error fetching driver data:", error);
     }
   };
 
@@ -132,8 +148,9 @@ export default function DriverDashboard() {
 
   if (!driverData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        <p className="text-muted-foreground">Carregando dados do motorista...</p>
       </div>
     );
   }
