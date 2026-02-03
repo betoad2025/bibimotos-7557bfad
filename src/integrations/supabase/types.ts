@@ -1814,6 +1814,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      verify_franchise_isolation: {
+        Args: { other_franchise_id: string; test_franchise_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
