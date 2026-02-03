@@ -263,7 +263,13 @@ export default function FranchiseLanding() {
                   {item.label}
                 </button>
               ))}
-              <div className="pt-4">
+              <div className="pt-4 space-y-2 border-t border-gray-200 mt-2">
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/login">Entrar</Link>
+                </Button>
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold" asChild>
+                  <Link to="/register">Cadastre-se</Link>
+                </Button>
                 <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 font-bold" onClick={() => scrollToSection('contato')}>
                   <Crown className="mr-2 h-4 w-4" />
                   Quero Minha Franquia
