@@ -445,7 +445,7 @@ Ação: Habilitar em Supabase Dashboard > Auth > Security
 ║  ✅ Storage: Isolado por usuário/franquia                   ║
 ║  ✅ Performance: 10 índices otimizados                      ║
 ║                                                               ║
-║  Auditor: Lovable Security Scanner v2.0                      ║
+║  Auditor: Bibi Motos Security Scanner v2.0                   ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 ```
