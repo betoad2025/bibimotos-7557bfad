@@ -1394,6 +1394,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_ride: {
+        Args: { p_driver_id: string; p_ride_id: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_action: string
@@ -1403,6 +1407,32 @@ export type Database = {
           p_window_minutes?: number
         }
         Returns: boolean
+      }
+      complete_ride: {
+        Args: {
+          p_driver_rating?: number
+          p_final_price: number
+          p_passenger_rating?: number
+          p_ride_id: string
+        }
+        Returns: Json
+      }
+      get_available_drivers: {
+        Args: { p_franchise_id: string; p_limit?: number }
+        Returns: {
+          current_lat: number
+          current_lng: number
+          id: string
+          profile_avatar: string
+          profile_name: string
+          profile_phone: string
+          rating: number
+          total_rides: number
+          user_id: string
+          vehicle_color: string
+          vehicle_model: string
+          vehicle_plate: string
+        }[]
       }
       get_driver_basic_info: {
         Args: { driver_uuid: string }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,20 +8,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/profile/UserAvatar";
 import { ReputationBadge } from "@/components/profile/ReputationBadge";
-import { RatingModal } from "@/components/ride/RatingModal";
+import { RideRequestCard } from "@/components/ride/RideRequestCard";
+import { RideTrackingCard } from "@/components/ride/RideTrackingCard";
+import { EnhancedRatingModal } from "@/components/ride/EnhancedRatingModal";
+import { usePendingRides, useRideRealtime } from "@/hooks/useRideRealtime";
+import { useRideService } from "@/hooks/useRideService";
 import logoImage from "@/assets/logo-simbolo.png";
 import {
   Wallet,
-  MapPin,
-  Clock,
   TrendingUp,
   Power,
-  Navigation,
   CreditCard,
   History,
-  Settings,
   LogOut,
-  Star,
   Bike,
 } from "lucide-react";
 
@@ -35,37 +34,59 @@ interface DriverData {
   vehicle_model: string;
   vehicle_plate: string;
   vehicle_color: string;
-}
-
-interface RideRequest {
-  id: string;
-  origin_address: string;
-  destination_address: string;
-  distance_km: number;
-  estimated_price: number;
-  passenger: {
-    name: string;
-    avatar_url: string | null;
-    rating: number;
-    total_rides: number;
-  };
+  franchise_id: string;
 }
 
 export default function DriverDashboard() {
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
+  const { rateRide, completeRide, updateDriverLocation } = useRideService();
+  
   const [driverData, setDriverData] = useState<DriverData | null>(null);
   const [isOnline, setIsOnline] = useState(false);
-  const [currentRide, setCurrentRide] = useState<any>(null);
-  const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
+  const [currentRideId, setCurrentRideId] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [ratingData, setRatingData] = useState<any>(null);
+
+  // Realtime hooks
+  const { rides: pendingRides } = usePendingRides(driverData?.franchise_id || null, isOnline);
+  const { ride, passenger, loading: rideLoading } = useRideRealtime(currentRideId);
 
   useEffect(() => {
     if (user) {
       fetchDriverData();
     }
   }, [user]);
+
+  // Check for active ride on mount
+  useEffect(() => {
+    if (driverData?.id) {
+      checkActiveRide();
+    }
+  }, [driverData?.id]);
+
+  // Update driver location when online
+  useEffect(() => {
+    if (!isOnline || !driverData?.id) return;
+
+    const updateLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateDriverLocation(
+            driverData.id,
+            position.coords.latitude,
+            position.coords.longitude
+          );
+        },
+        (error) => console.error("Location error:", error),
+        { enableHighAccuracy: true }
+      );
+    };
+
+    updateLocation();
+    const interval = setInterval(updateLocation, 30000); // Every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isOnline, driverData?.id, updateDriverLocation]);
 
   const fetchDriverData = async () => {
     if (!user) return;
@@ -88,11 +109,33 @@ export default function DriverDashboard() {
           vehicle_model: data.vehicle_model || "",
           vehicle_plate: data.vehicle_plate || "",
           vehicle_color: data.vehicle_color || "",
+          franchise_id: data.franchise_id,
         });
         setIsOnline(data.is_online || false);
       }
     } catch (error) {
       console.error("Error fetching driver data:", error);
+    }
+  };
+
+  const checkActiveRide = async () => {
+    if (!driverData?.id) return;
+
+    try {
+      const { data } = await supabase
+        .from("rides")
+        .select("id")
+        .eq("driver_id", driverData.id)
+        .in("status", ["accepted", "in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setCurrentRideId(data.id);
+      }
+    } catch (error) {
+      console.error("Error checking active ride:", error);
     }
   };
 
@@ -132,19 +175,41 @@ export default function DriverDashboard() {
     }
   };
 
-  const handleAcceptRide = async (rideId: string) => {
-    if (!driverData || driverData.credits <= 0) {
-      toast({
-        title: "Sem créditos",
-        description: "Compre créditos para aceitar corridas.",
-        variant: "destructive",
-      });
-      return;
+  const handleRideAccepted = () => {
+    // Find the ride that was just accepted
+    if (pendingRides.length > 0) {
+      setCurrentRideId(pendingRides[0].id);
     }
-
-    toast({ title: "Corrida aceita!", description: "Dirija-se ao passageiro." });
-    setRideRequests(prev => prev.filter(r => r.id !== rideId));
   };
+
+  const handleCompleteRide = async () => {
+    if (!ride) return;
+    
+    const success = await completeRide(
+      ride.id,
+      ride.final_price || ride.estimated_price || 0
+    );
+    
+    if (success) {
+      setShowRatingModal(true);
+      // Refresh driver data to update credits
+      fetchDriverData();
+    }
+  };
+
+  const handleRatingSubmit = async (rating: number) => {
+    if (!ride) return;
+    
+    await rateRide(ride.id, rating, true);
+    setCurrentRideId(null);
+    setShowRatingModal(false);
+  };
+
+  const handleCancelRide = () => {
+    setCurrentRideId(null);
+  };
+
+  const hasActiveRide = currentRideId && ride && !["completed", "cancelled"].includes(ride.status || "");
 
   if (!driverData) {
     return (
@@ -168,7 +233,7 @@ export default function DriverDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant={isOnline ? "default" : "secondary"} className={isOnline ? "bg-green-500" : ""}>
+            <Badge variant={isOnline ? "default" : "secondary"} className={isOnline ? "bg-green-600" : ""}>
               {isOnline ? "Online" : "Offline"}
             </Badge>
             <Button variant="ghost" size="icon" onClick={signOut}>
@@ -217,7 +282,7 @@ export default function DriverDashboard() {
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Power className={`h-6 w-6 ${isOnline ? "text-green-500" : "text-muted-foreground"}`} />
+                <Power className={`h-6 w-6 ${isOnline ? "text-green-600" : "text-muted-foreground"}`} />
                 <div>
                   <p className="font-semibold">{isOnline ? "Você está online" : "Você está offline"}</p>
                   <p className="text-sm text-muted-foreground">
@@ -234,110 +299,97 @@ export default function DriverDashboard() {
           </CardContent>
         </Card>
 
+        {/* Active Ride */}
+        {hasActiveRide && (
+          <RideTrackingCard
+            ride={ride}
+            driver={null}
+            passenger={passenger}
+            isDriver={true}
+            onCancel={handleCancelRide}
+            onComplete={handleCompleteRide}
+            onRate={() => setShowRatingModal(true)}
+          />
+        )}
+
+        {/* Pending Ride Requests */}
+        {!hasActiveRide && isOnline && pendingRides.length > 0 && (
+          <div className="space-y-4">
+            {pendingRides.slice(0, 3).map((rideRequest) => (
+              <RideRequestCard
+                key={rideRequest.id}
+                ride={rideRequest}
+                driverId={driverData.id}
+                onAccepted={() => {
+                  setCurrentRideId(rideRequest.id);
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="border-2">
-            <CardContent className="pt-4 pb-4 text-center">
-              <Wallet className="h-8 w-8 mx-auto text-green-500 mb-2" />
-              <p className="text-2xl font-bold text-green-600">
-                R$ {driverData.credits.toFixed(2)}
-              </p>
-              <p className="text-xs text-muted-foreground">Créditos</p>
-            </CardContent>
-          </Card>
-          <Card className="border-2">
-            <CardContent className="pt-4 pb-4 text-center">
-              <TrendingUp className="h-8 w-8 mx-auto text-primary mb-2" />
-              <p className="text-2xl font-bold">{driverData.total_rides}</p>
-              <p className="text-xs text-muted-foreground">Corridas</p>
-            </CardContent>
-          </Card>
-        </div>
+        {!hasActiveRide && (
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="border-2">
+              <CardContent className="pt-4 pb-4 text-center">
+                <Wallet className="h-8 w-8 mx-auto text-green-600 mb-2" />
+                <p className="text-2xl font-bold text-green-600">
+                  R$ {driverData.credits.toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground">Créditos</p>
+              </CardContent>
+            </Card>
+            <Card className="border-2">
+              <CardContent className="pt-4 pb-4 text-center">
+                <TrendingUp className="h-8 w-8 mx-auto text-primary mb-2" />
+                <p className="text-2xl font-bold">{driverData.total_rides}</p>
+                <p className="text-xs text-muted-foreground">Corridas</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Reputation */}
-        <ReputationBadge
-          rating={driverData.rating}
-          totalRides={driverData.total_rides}
-          type="driver"
-        />
+        {!hasActiveRide && (
+          <ReputationBadge
+            rating={driverData.rating}
+            totalRides={driverData.total_rides}
+            type="driver"
+          />
+        )}
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-            <CreditCard className="h-6 w-6" />
-            <span>Comprar Créditos</span>
-          </Button>
-          <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-            <History className="h-6 w-6" />
-            <span>Histórico</span>
-          </Button>
-        </div>
-
-        {/* Ride Requests (Mock) */}
-        {isOnline && rideRequests.length > 0 && (
-          <Card className="border-2 border-primary animate-pulse">
-            <CardHeader>
-              <CardTitle className="text-lg">Nova Corrida!</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {rideRequests.map((ride) => (
-                <div key={ride.id} className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <UserAvatar
-                      avatarUrl={ride.passenger.avatar_url}
-                      name={ride.passenger.name}
-                      rating={ride.passenger.rating}
-                      totalRides={ride.passenger.total_rides}
-                      size="md"
-                    />
-                    <div>
-                      <p className="font-semibold">{ride.passenger.name}</p>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span>{ride.passenger.rating.toFixed(1)}</span>
-                        <span>• {ride.passenger.total_rides} viagens</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-green-500 mt-0.5" />
-                      <span className="text-sm">{ride.origin_address}</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Navigation className="h-4 w-4 text-red-500 mt-0.5" />
-                      <span className="text-sm">{ride.destination_address}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{ride.distance_km} km</p>
-                      <p className="text-xl font-bold text-green-600">
-                        R$ {ride.estimated_price.toFixed(2)}
-                      </p>
-                    </div>
-                    <Button onClick={() => handleAcceptRide(ride.id)} className="bg-green-500 hover:bg-green-600">
-                      Aceitar
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+        {!hasActiveRide && (
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
+              <CreditCard className="h-6 w-6" />
+              <span>Comprar Créditos</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
+              <History className="h-6 w-6" />
+              <span>Histórico</span>
+            </Button>
+          </div>
         )}
       </main>
 
       {/* Rating Modal */}
-      {showRatingModal && ratingData && (
-        <RatingModal
+      {showRatingModal && passenger && ride && (
+        <EnhancedRatingModal
           open={showRatingModal}
-          onClose={() => setShowRatingModal(false)}
-          onSubmit={(rating) => {
-            toast({ title: "Avaliação enviada!", description: `Você deu ${rating} estrelas.` });
+          onClose={() => {
+            setShowRatingModal(false);
+            setCurrentRideId(null);
           }}
-          userName={ratingData.name}
-          userAvatar={ratingData.avatar}
+          onSubmit={handleRatingSubmit}
+          userName={passenger.name}
+          userAvatar={passenger.avatarUrl}
+          userRating={passenger.rating}
+          userTotalRides={passenger.totalRides}
           userType="passenger"
+          ridePrice={ride.final_price || ride.estimated_price || undefined}
+          rideDistance={ride.distance_km || undefined}
         />
       )}
     </div>
