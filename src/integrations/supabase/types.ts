@@ -47,6 +47,13 @@ export type Database = {
             referencedRelation: "franchises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "analytics_events_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cities: {
@@ -151,6 +158,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "credit_transactions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "credit_transactions_ride_id_fkey"
             columns: ["ride_id"]
             isOneToOne: false
@@ -251,6 +265,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deliveries_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "deliveries_merchant_id_fkey"
             columns: ["merchant_id"]
             isOneToOne: false
@@ -312,6 +333,13 @@ export type Database = {
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_approval_requests_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
             referencedColumns: ["id"]
           },
         ]
@@ -407,6 +435,13 @@ export type Database = {
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
             referencedColumns: ["id"]
           },
         ]
@@ -584,6 +619,13 @@ export type Database = {
             referencedRelation: "franchises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "known_places_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       merchants: {
@@ -637,6 +679,13 @@ export type Database = {
             referencedRelation: "franchises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "merchants_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       neighborhood_stats: {
@@ -675,6 +724,13 @@ export type Database = {
             referencedRelation: "franchises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "neighborhood_stats_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notification_blocked_users: {
@@ -708,6 +764,13 @@ export type Database = {
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_blocked_users_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
             referencedColumns: ["id"]
           },
         ]
@@ -763,6 +826,13 @@ export type Database = {
             referencedRelation: "franchises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notification_broadcasts_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       passengers: {
@@ -802,6 +872,13 @@ export type Database = {
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passengers_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
             referencedColumns: ["id"]
           },
         ]
@@ -941,7 +1018,47 @@ export type Database = {
             referencedRelation: "franchises"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "promotions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      rate_limit_attempts: {
+        Row: {
+          action: string
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          first_attempt_at: string | null
+          id: string
+          identifier: string
+          last_attempt_at: string | null
+        }
+        Insert: {
+          action: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          identifier: string
+          last_attempt_at?: string | null
+        }
+        Update: {
+          action?: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          identifier?: string
+          last_attempt_at?: string | null
+        }
+        Relationships: []
       }
       rides: {
         Row: {
@@ -1047,6 +1164,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rides_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rides_passenger_id_fkey"
             columns: ["passenger_id"]
             isOneToOne: false
@@ -1054,6 +1178,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       support_conversations: {
         Row: {
@@ -1095,6 +1255,13 @@ export type Database = {
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_conversations_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1187,9 +1354,68 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      franchises_public: {
+        Row: {
+          base_price: number | null
+          city_id: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          price_per_km: number | null
+        }
+        Insert: {
+          base_price?: number | null
+          city_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          price_per_km?: number | null
+        }
+        Update: {
+          base_price?: number | null
+          city_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          price_per_km?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchises_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: true
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_block_duration_minutes?: number
+          p_identifier: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
+      get_driver_basic_info: {
+        Args: { driver_uuid: string }
+        Returns: {
+          id: string
+          is_online: boolean
+          rating: number
+          total_rides: number
+          vehicle_color: string
+          vehicle_model: string
+          vehicle_plate: string
+        }[]
+      }
       get_franchise_payment_settings: {
         Args: { _franchise_id: string }
         Returns: {
@@ -1205,6 +1431,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_resource_id?: string
+          p_resource_type: string
+        }
+        Returns: undefined
       }
       set_franchise_payment_settings: {
         Args: {
