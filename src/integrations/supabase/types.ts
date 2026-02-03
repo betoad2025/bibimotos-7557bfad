@@ -56,6 +56,57 @@ export type Database = {
           },
         ]
       }
+      api_key_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          franchise_id: string | null
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          performed_by: string | null
+          service_name: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          franchise_id?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string | null
+          service_name: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          franchise_id?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string | null
+          service_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_key_audit_log_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_key_audit_log_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           created_at: string
@@ -172,6 +223,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      default_api_keys: {
+        Row: {
+          api_key_encrypted: string
+          api_secret_encrypted: string | null
+          created_at: string
+          created_by: string | null
+          environment: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          api_secret_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          environment?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          api_secret_encrypted?: string | null
+          created_at?: string
+          created_by?: string | null
+          environment?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       deliveries: {
         Row: {
@@ -439,6 +529,66 @@ export type Database = {
           },
           {
             foreignKeyName: "drivers_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      franchise_api_keys: {
+        Row: {
+          api_key_encrypted: string
+          api_secret_encrypted: string | null
+          created_at: string
+          environment: string
+          franchise_id: string
+          id: string
+          is_active: boolean
+          is_validated: boolean
+          metadata: Json | null
+          service_name: string
+          updated_at: string
+          validated_at: string | null
+        }
+        Insert: {
+          api_key_encrypted: string
+          api_secret_encrypted?: string | null
+          created_at?: string
+          environment?: string
+          franchise_id: string
+          id?: string
+          is_active?: boolean
+          is_validated?: boolean
+          metadata?: Json | null
+          service_name: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string
+          api_secret_encrypted?: string | null
+          created_at?: string
+          environment?: string
+          franchise_id?: string
+          id?: string
+          is_active?: boolean
+          is_validated?: boolean
+          metadata?: Json | null
+          service_name?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_api_keys_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_api_keys_franchise_id_fkey"
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises_public"
@@ -1578,6 +1728,19 @@ export type Database = {
           p_ride_id?: string
         }
         Returns: Json
+      }
+      get_api_key: {
+        Args: {
+          p_environment?: string
+          p_franchise_id: string
+          p_service_name: string
+        }
+        Returns: {
+          api_key: string
+          api_secret: string
+          is_franchise_key: boolean
+          metadata: Json
+        }[]
       }
       get_available_drivers: {
         Args: { p_franchise_id: string; p_limit?: number }
