@@ -2,13 +2,19 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bike, Mail, Lock, User, Phone, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bike, Mail, Lock, User, Phone, ArrowLeft, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 type UserType = "passenger" | "driver" | "merchant";
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
+  
   const [userType, setUserType] = useState<UserType>("passenger");
   const [formData, setFormData] = useState({
     name: "",
@@ -21,9 +27,47 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name || !formData.email || !formData.password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Senhas não conferem",
+        description: "As senhas digitadas não são iguais.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
-    // TODO: Implement register logic
-    setTimeout(() => setIsLoading(false), 1000);
+
+    const { error } = await signUp(formData.email, formData.password, formData.name);
+
+    if (!error) {
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Verifique seu email para confirmar o cadastro.",
+      });
+      navigate("/login");
+    }
+
+    setIsLoading(false);
   };
 
   const updateField = (field: string, value: string) => {
@@ -171,7 +215,14 @@ const Register = () => {
               className="w-full h-12 btn-gradient text-lg"
               disabled={isLoading}
             >
-              {isLoading ? "Cadastrando..." : "Criar conta"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Cadastrando...
+                </>
+              ) : (
+                "Criar conta"
+              )}
             </Button>
           </form>
 
