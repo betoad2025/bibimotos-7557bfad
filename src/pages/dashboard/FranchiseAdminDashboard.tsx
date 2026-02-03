@@ -16,12 +16,16 @@ import logoImage from "@/assets/logo-simbolo.png";
 import { MarketingPanel } from "@/components/dashboard/MarketingPanel";
 import { FranchiseCreditsCard } from "@/components/dashboard/FranchiseCreditsCard";
 import { SettingsPanel } from "@/components/dashboard/SettingsPanel";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
+import { RealtimeNotificationPanel } from "@/components/notifications/RealtimeNotificationPanel";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))', 'hsl(var(--destructive))', 'hsl(var(--chart-1))'];
 
 export default function FranchiseAdminDashboard() {
   const { user, signOut, profile } = useAuth();
   const [franchise, setFranchise] = useState<any>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [stats, setStats] = useState({
     totalDrivers: 0,
     onlineDrivers: 0,
@@ -37,6 +41,15 @@ export default function FranchiseAdminDashboard() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [neighborhoodStats, setNeighborhoodStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Realtime notifications hook
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+  } = useRealtimeNotifications({ franchiseId: franchise?.id || '', userId: user?.id });
 
   useEffect(() => {
     fetchData();
@@ -174,11 +187,16 @@ export default function FranchiseAdminDashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
               <Bell className="h-5 w-5" />
-              {stats.pendingApproval > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  {stats.pendingApproval}
+              {(stats.pendingApproval > 0 || unreadCount > 0) && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                  {stats.pendingApproval + unreadCount}
                 </span>
               )}
             </Button>
@@ -259,12 +277,26 @@ export default function FranchiseAdminDashboard() {
           </Card>
         </div>
 
+        {/* Notification Panel Dropdown */}
+        {showNotifications && (
+          <div className="mb-6">
+            <RealtimeNotificationPanel
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkAsRead={markAsRead}
+              onMarkAllAsRead={markAllAsRead}
+              onClearAll={clearAll}
+            />
+          </div>
+        )}
+
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+          <TabsList className="grid grid-cols-8 w-full max-w-5xl">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="drivers">Motoristas</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="notifications">Notificações</TabsTrigger>
             <TabsTrigger value="credits">Créditos</TabsTrigger>
             <TabsTrigger value="marketing">Marketing</TabsTrigger>
             <TabsTrigger value="settings">Integrações</TabsTrigger>
@@ -528,6 +560,11 @@ export default function FranchiseAdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications">
+            <NotificationCenter franchiseId={franchise.id} franchiseName={`${franchise.name} - ${franchise.cities?.name}`} />
           </TabsContent>
 
           {/* Credits Tab */}
