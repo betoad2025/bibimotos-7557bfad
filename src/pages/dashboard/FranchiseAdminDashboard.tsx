@@ -9,12 +9,14 @@ import {
   Bike, Users, TrendingUp, DollarSign, MapPin,
   Activity, BarChart3, ArrowUpRight, Star, Package,
   Clock, Bell, LogOut, Settings, CheckCircle2, XCircle,
-  CreditCard, MessageCircle, Percent, Calendar
+  CreditCard, MessageCircle, Percent, Calendar, Wallet, Target
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import logoImage from "@/assets/logo-simbolo.png";
+import { MarketingPanel } from "@/components/dashboard/MarketingPanel";
+import { FranchiseCreditsCard } from "@/components/dashboard/FranchiseCreditsCard";
 
-const COLORS = ['#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))', 'hsl(var(--destructive))', 'hsl(var(--chart-1))'];
 
 export default function FranchiseAdminDashboard() {
   const { user, signOut, profile } = useAuth();
@@ -258,10 +260,12 @@ export default function FranchiseAdminDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
+          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="drivers">Motoristas</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="credits">Créditos</TabsTrigger>
+            <TabsTrigger value="marketing">Marketing</TabsTrigger>
             <TabsTrigger value="config">Configurações</TabsTrigger>
           </TabsList>
 
@@ -522,6 +526,16 @@ export default function FranchiseAdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Credits Tab */}
+          <TabsContent value="credits">
+            <FranchiseCreditsCard franchiseId={franchise.id} />
+          </TabsContent>
+
+          {/* Marketing Tab */}
+          <TabsContent value="marketing">
+            <MarketingPanel franchiseId={franchise.id} />
           </TabsContent>
         </Tabs>
       </div>

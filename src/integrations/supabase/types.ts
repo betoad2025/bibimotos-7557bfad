@@ -446,6 +446,99 @@ export type Database = {
           },
         ]
       }
+      franchise_credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          franchise_id: string
+          id: string
+          payment_id: string | null
+          payment_method: string | null
+          payment_status: string | null
+          processed_by: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          franchise_id: string
+          id?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          processed_by?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          franchise_id?: string
+          id?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          processed_by?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_credit_transactions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_credit_transactions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      franchise_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          franchise_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          franchise_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          franchise_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_credits_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: true
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_credits_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: true
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchise_leads: {
         Row: {
           city: string
@@ -484,6 +577,66 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      franchise_marketing: {
+        Row: {
+          created_at: string
+          custom_pixels: Json | null
+          facebook_access_token: string | null
+          facebook_pixel_id: string | null
+          franchise_id: string
+          google_ads_conversion_id: string | null
+          google_ads_id: string | null
+          google_analytics_id: string | null
+          id: string
+          instagram_business_id: string | null
+          tiktok_pixel_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_pixels?: Json | null
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          franchise_id: string
+          google_ads_conversion_id?: string | null
+          google_ads_id?: string | null
+          google_analytics_id?: string | null
+          id?: string
+          instagram_business_id?: string | null
+          tiktok_pixel_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_pixels?: Json | null
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          franchise_id?: string
+          google_ads_conversion_id?: string | null
+          google_ads_id?: string | null
+          google_analytics_id?: string | null
+          id?: string
+          instagram_business_id?: string | null
+          tiktok_pixel_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_marketing_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: true
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_marketing_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: true
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       franchises: {
         Row: {
@@ -1417,6 +1570,15 @@ export type Database = {
         }
         Returns: Json
       }
+      deduct_franchise_credit: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_franchise_id: string
+          p_ride_id?: string
+        }
+        Returns: Json
+      }
       get_available_drivers: {
         Args: { p_franchise_id: string; p_limit?: number }
         Returns: {
@@ -1470,6 +1632,15 @@ export type Database = {
           p_resource_type: string
         }
         Returns: undefined
+      }
+      process_franchise_credit_recharge: {
+        Args: {
+          p_amount: number
+          p_franchise_id: string
+          p_payment_id: string
+          p_payment_method?: string
+        }
+        Returns: Json
       }
       set_franchise_payment_settings: {
         Args: {
