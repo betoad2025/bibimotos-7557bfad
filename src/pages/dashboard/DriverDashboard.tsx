@@ -369,10 +369,11 @@ export default function DriverDashboard() {
         {/* Actions Tabs */}
         {!hasActiveRide && (
           <Tabs defaultValue="credits" className="space-y-4">
-            <TabsList className="grid grid-cols-3 w-full">
-              <TabsTrigger value="credits">Créditos</TabsTrigger>
-              <TabsTrigger value="history">Histórico</TabsTrigger>
-              <TabsTrigger value="transfer">Transferência</TabsTrigger>
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="credits">💳 Créditos</TabsTrigger>
+              <TabsTrigger value="report">📊 Relatório</TabsTrigger>
+              <TabsTrigger value="history">📜 Histórico</TabsTrigger>
+              <TabsTrigger value="transfer">🔄 Transferir</TabsTrigger>
             </TabsList>
             <TabsContent value="credits">
               <CreditsShop
@@ -381,6 +382,24 @@ export default function DriverDashboard() {
                 currentCredits={driverData.credits}
                 onCreditsUpdated={fetchDriverData}
               />
+            </TabsContent>
+            <TabsContent value="report" className="space-y-4">
+              <FinancialReportCard
+                driverId={driverData.id}
+                franchiseId={driverData.franchise_id}
+              />
+              <div className="flex gap-2">
+                <FinancialReportPDF
+                  driverId={driverData.id}
+                  driverName={profile?.full_name || "Motorista"}
+                  period="weekly"
+                />
+                <FinancialReportPDF
+                  driverId={driverData.id}
+                  driverName={profile?.full_name || "Motorista"}
+                  period="monthly"
+                />
+              </div>
             </TabsContent>
             <TabsContent value="history">
               <RideHistory

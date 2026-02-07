@@ -75,9 +75,9 @@ export function FavoriteAddresses({ userId, franchiseId, onSelectAddress }: Favo
   const fetchAddresses = async () => {
     try {
       const { data } = await supabase
-        .from("known_places")
+        .from("favorite_addresses")
         .select("*")
-        .eq("franchise_id", franchiseId)
+        .eq("user_id", userId)
         .eq("is_active", true)
         .order("category", { ascending: true });
 
@@ -112,8 +112,9 @@ export function FavoriteAddresses({ userId, franchiseId, onSelectAddress }: Favo
     try {
       // TODO: Geocode address to get lat/lng
       const { error } = await supabase
-        .from("known_places")
+        .from("favorite_addresses")
         .insert({
+          user_id: userId,
           franchise_id: franchiseId,
           name: newAddress.name,
           address: newAddress.address,
@@ -145,7 +146,7 @@ export function FavoriteAddresses({ userId, franchiseId, onSelectAddress }: Favo
   const handleDeleteAddress = async (id: string) => {
     try {
       const { error } = await supabase
-        .from("known_places")
+        .from("favorite_addresses")
         .update({ is_active: false })
         .eq("id", id);
 
