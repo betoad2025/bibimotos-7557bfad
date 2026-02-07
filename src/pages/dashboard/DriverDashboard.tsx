@@ -27,7 +27,8 @@ import {
 import { CreditsShop } from "@/components/driver/CreditsShop";
 import { RideHistory } from "@/components/ride/RideHistory";
 import { DriverTransferRequest } from "@/components/driver/DriverTransferRequest";
-import { useState as useTabState } from "react";
+import { FinancialReportCard } from "@/components/driver/FinancialReportCard";
+import { FinancialReportPDF } from "@/components/driver/FinancialReportPDF";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DriverData {

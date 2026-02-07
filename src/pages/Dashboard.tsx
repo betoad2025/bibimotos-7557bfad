@@ -60,25 +60,7 @@ export default function Dashboard() {
         </p>
         <button 
           onClick={() => navigate('/complete-registration')}
-          className="text-purple-600 hover:underline"
-        >
-          Completar cadastro
-        </button>
-      </div>
-    </div>
-  );
-
-  // Default: user without role - show complete registration
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-background">
-      <div className="text-center max-w-md p-8">
-        <h1 className="text-2xl font-bold mb-4">Bem-vindo!</h1>
-        <p className="text-muted-foreground mb-6">
-          Seu cadastro está em análise. Em breve você terá acesso ao sistema.
-        </p>
-        <button 
-          onClick={() => navigate('/complete-registration')}
-          className="text-purple-600 hover:underline"
+          className="text-primary hover:underline"
         >
           Completar cadastro
         </button>

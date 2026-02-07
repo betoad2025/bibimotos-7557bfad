@@ -12,9 +12,11 @@ import { EnhancedRatingModal } from "@/components/ride/EnhancedRatingModal";
 import { useRideRealtime } from "@/hooks/useRideRealtime";
 import { useRideService } from "@/hooks/useRideService";
 import logoImage from "@/assets/logo-simbolo.png";
-import { History, User, LogOut } from "lucide-react";
+import { History, User, LogOut, MapPin, Wallet } from "lucide-react";
 import { LoyaltyProgressCard } from "@/components/passenger/LoyaltyProgressCard";
+import { FavoriteAddresses } from "@/components/passenger/FavoriteAddresses";
 import { RideHistory } from "@/components/ride/RideHistory";
+import { UserWalletCard } from "@/components/wallet/UserWalletCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PassengerData {
@@ -202,30 +204,47 @@ export default function PassengerDashboard() {
           </Card>
         )}
 
-        {/* Loyalty & History (when idle) */}
+        {/* Extra features when idle */}
         {!hasActiveRide && passengerData && (
-          <LoyaltyProgressCard
-            userId={user?.id || ""}
-            franchiseId={passengerData.franchise_id}
-          />
-        )}
-
-        {/* Reputation Card (when idle) */}
-        {!hasActiveRide && passengerData && (
-          <ReputationBadge
-            rating={passengerData.rating}
-            totalRides={passengerData.total_rides}
-            type="passenger"
-          />
-        )}
-
-        {/* History Tab (when idle) */}
-        {!hasActiveRide && passengerData && (
-          <RideHistory
-            userId={user?.id || ""}
-            userType="passenger"
-            passengerId={passengerData.id}
-          />
+          <Tabs defaultValue="ride" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="ride">🏍️ Corrida</TabsTrigger>
+              <TabsTrigger value="wallet">💳 Carteira</TabsTrigger>
+              <TabsTrigger value="places">📍 Lugares</TabsTrigger>
+              <TabsTrigger value="history">📜 Histórico</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="ride" className="space-y-4">
+              <LoyaltyProgressCard
+                userId={user?.id || ""}
+                franchiseId={passengerData.franchise_id}
+              />
+              <ReputationBadge
+                rating={passengerData.rating}
+                totalRides={passengerData.total_rides}
+                type="passenger"
+              />
+            </TabsContent>
+            
+            <TabsContent value="wallet">
+              <UserWalletCard />
+            </TabsContent>
+            
+            <TabsContent value="places">
+              <FavoriteAddresses
+                userId={user?.id || ""}
+                franchiseId={passengerData.franchise_id}
+              />
+            </TabsContent>
+            
+            <TabsContent value="history">
+              <RideHistory
+                userId={user?.id || ""}
+                userType="passenger"
+                passengerId={passengerData.id}
+              />
+            </TabsContent>
+          </Tabs>
         )}
       </main>
 
