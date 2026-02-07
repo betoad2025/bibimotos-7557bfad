@@ -1009,6 +1009,63 @@ export type Database = {
           },
         ]
       }
+      favorite_addresses: {
+        Row: {
+          address: string
+          category: string | null
+          created_at: string
+          franchise_id: string
+          id: string
+          is_active: boolean | null
+          lat: number
+          lng: number
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          category?: string | null
+          created_at?: string
+          franchise_id: string
+          id?: string
+          is_active?: boolean | null
+          lat: number
+          lng: number
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          category?: string | null
+          created_at?: string
+          franchise_id?: string
+          id?: string
+          is_active?: boolean | null
+          lat?: number
+          lng?: number
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_addresses_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorite_addresses_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchise_api_keys: {
         Row: {
           api_key_encrypted: string
