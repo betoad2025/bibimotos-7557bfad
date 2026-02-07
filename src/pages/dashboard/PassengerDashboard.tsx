@@ -13,6 +13,9 @@ import { useRideRealtime } from "@/hooks/useRideRealtime";
 import { useRideService } from "@/hooks/useRideService";
 import logoImage from "@/assets/logo-simbolo.png";
 import { History, User, LogOut } from "lucide-react";
+import { LoyaltyProgressCard } from "@/components/passenger/LoyaltyProgressCard";
+import { RideHistory } from "@/components/ride/RideHistory";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PassengerData {
   id: string;
@@ -199,6 +202,14 @@ export default function PassengerDashboard() {
           </Card>
         )}
 
+        {/* Loyalty & History (when idle) */}
+        {!hasActiveRide && passengerData && (
+          <LoyaltyProgressCard
+            userId={user?.id || ""}
+            franchiseId={passengerData.franchise_id}
+          />
+        )}
+
         {/* Reputation Card (when idle) */}
         {!hasActiveRide && passengerData && (
           <ReputationBadge
@@ -208,18 +219,13 @@ export default function PassengerDashboard() {
           />
         )}
 
-        {/* Quick Actions (when idle) */}
-        {!hasActiveRide && (
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-              <History className="h-6 w-6" />
-              <span>Histórico</span>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-              <User className="h-6 w-6" />
-              <span>Meu Perfil</span>
-            </Button>
-          </div>
+        {/* History Tab (when idle) */}
+        {!hasActiveRide && passengerData && (
+          <RideHistory
+            userId={user?.id || ""}
+            userType="passenger"
+            passengerId={passengerData.id}
+          />
         )}
       </main>
 
