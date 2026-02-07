@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CompleteRegistration from "./pages/CompleteRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
+import TrackRide from "./pages/TrackRide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/complete-registration" element={<CompleteRegistration />} />
+            <Route path="/acompanhar/:token" element={<TrackRide />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
