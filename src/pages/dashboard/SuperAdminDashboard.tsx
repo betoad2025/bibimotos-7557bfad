@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Building2, Users, Crown, BarChart3 } from "lucide-react";
+import { MapPin, Building2, Users, Crown, BarChart3, Activity, Shield } from "lucide-react";
 import { SuperAdminHeader } from "@/components/superadmin/SuperAdminHeader";
 import { StatsCards } from "@/components/superadmin/StatsCards";
 import { CitiesManagement } from "@/components/superadmin/CitiesManagement";
@@ -9,6 +9,8 @@ import { FranchisesManagement } from "@/components/superadmin/FranchisesManageme
 import { UsersManagement } from "@/components/superadmin/UsersManagement";
 import { LeadsManagement } from "@/components/superadmin/LeadsManagement";
 import { OverviewCharts } from "@/components/superadmin/OverviewCharts";
+import { RideMonitoring } from "@/components/superadmin/RideMonitoring";
+import { EmergencyAlerts } from "@/components/superadmin/EmergencyAlerts";
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
@@ -20,6 +22,7 @@ export default function SuperAdminDashboard() {
     totalPassengers: 0,
     totalMerchants: 0,
     pendingLeads: 0,
+    activeAlerts: 0,
   });
   const [cities, setCities] = useState<any[]>([]);
   const [franchises, setFranchises] = useState<any[]>([]);
@@ -43,12 +46,13 @@ export default function SuperAdminDashboard() {
       setFranchises(franchisesData || []);
 
       // Fetch counts
-      const [driversRes, passengersRes, merchantsRes, leadsRes, ridesRes] = await Promise.all([
+      const [driversRes, passengersRes, merchantsRes, leadsRes, ridesRes, alertsRes] = await Promise.all([
         supabase.from("drivers").select("*", { count: "exact", head: true }),
         supabase.from("passengers").select("*", { count: "exact", head: true }),
         supabase.from("merchants").select("*", { count: "exact", head: true }),
         supabase.from("franchise_leads").select("*", { count: "exact", head: true }).eq("status", "new"),
         supabase.from("rides").select("final_price").limit(1000),
+        supabase.from("emergency_alerts").select("*", { count: "exact", head: true }).eq("status", "active"),
       ]);
 
       const totalRevenue = ridesRes.data?.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0) || 0;
@@ -62,6 +66,7 @@ export default function SuperAdminDashboard() {
         totalPassengers: passengersRes.count || 0,
         totalMerchants: merchantsRes.count || 0,
         pendingLeads: leadsRes.count || 0,
+        activeAlerts: alertsRes.count || 0,
       });
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -85,10 +90,23 @@ export default function SuperAdminDashboard() {
         <StatsCards stats={stats} />
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
+          <TabsList className="grid w-full max-w-4xl grid-cols-7">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Monitoramento
+            </TabsTrigger>
+            <TabsTrigger value="emergency" className="flex items-center gap-2 relative">
+              <Shield className="h-4 w-4" />
+              Emergências
+              {stats.activeAlerts > 0 && (
+                <span className="ml-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center animate-pulse">
+                  {stats.activeAlerts}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="cities" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
@@ -115,6 +133,14 @@ export default function SuperAdminDashboard() {
 
           <TabsContent value="overview">
             <OverviewCharts franchises={franchises} cities={cities} />
+          </TabsContent>
+
+          <TabsContent value="monitoring">
+            <RideMonitoring />
+          </TabsContent>
+
+          <TabsContent value="emergency">
+            <EmergencyAlerts />
           </TabsContent>
 
           <TabsContent value="cities">

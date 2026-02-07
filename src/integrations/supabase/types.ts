@@ -536,6 +536,95 @@ export type Database = {
           },
         ]
       }
+      emergency_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          delivery_id: string | null
+          description: string | null
+          franchise_id: string
+          id: string
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          reporter_type: string
+          reporter_user_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          ride_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          delivery_id?: string | null
+          description?: string | null
+          franchise_id: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          reporter_type: string
+          reporter_user_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          ride_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          delivery_id?: string | null
+          description?: string | null
+          franchise_id?: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          reporter_type?: string
+          reporter_user_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          ride_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_alerts_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchise_api_keys: {
         Row: {
           api_key_encrypted: string
@@ -1362,6 +1451,57 @@ export type Database = {
           last_attempt_at?: string | null
         }
         Relationships: []
+      }
+      ride_location_logs: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          driver_id: string
+          heading: number | null
+          id: string
+          lat: number
+          lng: number
+          ride_id: string
+          speed: number | null
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          driver_id: string
+          heading?: number | null
+          id?: string
+          lat: number
+          lng: number
+          ride_id: string
+          speed?: number | null
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          ride_id?: string
+          speed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_location_logs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_location_logs_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rides: {
         Row: {
