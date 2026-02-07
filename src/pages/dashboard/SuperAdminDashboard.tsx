@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Building2, Users, Crown, BarChart3, Activity, Shield, Megaphone } from "lucide-react";
+import { 
+  MapPin, Building2, Users, Crown, BarChart3, Activity, Shield, Megaphone,
+  CreditCard, ArrowRightLeft, Settings, DollarSign
+} from "lucide-react";
 import { SuperAdminHeader } from "@/components/superadmin/SuperAdminHeader";
 import { StatsCards } from "@/components/superadmin/StatsCards";
 import { CitiesManagement } from "@/components/superadmin/CitiesManagement";
@@ -12,6 +15,10 @@ import { OverviewCharts } from "@/components/superadmin/OverviewCharts";
 import { RideMonitoring } from "@/components/superadmin/RideMonitoring";
 import { EmergencyAlerts } from "@/components/superadmin/EmergencyAlerts";
 import { GlobalMarketingPanel } from "@/components/superadmin/GlobalMarketingPanel";
+import { FranchiseBillingManagement } from "@/components/superadmin/FranchiseBillingManagement";
+import { FranchiseTransferManagement } from "@/components/superadmin/FranchiseTransferManagement";
+import { FranchisePricingConfig } from "@/components/superadmin/FranchisePricingConfig";
+import { DriverTransferRequests } from "@/components/superadmin/DriverTransferRequests";
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
@@ -78,7 +85,7 @@ export default function SuperAdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -91,53 +98,64 @@ export default function SuperAdminDashboard() {
         <StatsCards stats={stats} />
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-5xl grid-cols-8">
-            <TabsTrigger value="overview" className="flex items-center gap-1 text-xs md:text-sm">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden md:inline">Visão Geral</span>
-              <span className="md:hidden">Geral</span>
-            </TabsTrigger>
-            <TabsTrigger value="monitoring" className="flex items-center gap-1 text-xs md:text-sm">
-              <Activity className="h-4 w-4" />
-              <span className="hidden md:inline">Monitoramento</span>
-              <span className="md:hidden">Monitor</span>
-            </TabsTrigger>
-            <TabsTrigger value="emergency" className="flex items-center gap-1 text-xs md:text-sm relative">
-              <Shield className="h-4 w-4" />
-              <span className="hidden md:inline">Emergências</span>
-              <span className="md:hidden">SOS</span>
-              {stats.activeAlerts > 0 && (
-                <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center animate-pulse">
-                  {stats.activeAlerts}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="cities" className="flex items-center gap-1 text-xs md:text-sm">
-              <MapPin className="h-4 w-4" />
-              Cidades
-            </TabsTrigger>
-            <TabsTrigger value="franchises" className="flex items-center gap-1 text-xs md:text-sm">
-              <Building2 className="h-4 w-4" />
-              Franquias
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-1 text-xs md:text-sm">
-              <Users className="h-4 w-4" />
-              Usuários
-            </TabsTrigger>
-            <TabsTrigger value="marketing" className="flex items-center gap-1 text-xs md:text-sm">
-              <Megaphone className="h-4 w-4" />
-              Marketing
-            </TabsTrigger>
-            <TabsTrigger value="leads" className="flex items-center gap-1 text-xs md:text-sm">
-              <Crown className="h-4 w-4" />
-              Leads
-              {stats.pendingLeads > 0 && (
-                <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-                  {stats.pendingLeads}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="grid w-max min-w-full grid-cols-11 gap-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1 text-xs md:text-sm">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden lg:inline">Visão Geral</span>
+              </TabsTrigger>
+              <TabsTrigger value="monitoring" className="flex items-center gap-1 text-xs md:text-sm">
+                <Activity className="h-4 w-4" />
+                <span className="hidden lg:inline">Monitoramento</span>
+              </TabsTrigger>
+              <TabsTrigger value="emergency" className="flex items-center gap-1 text-xs md:text-sm relative">
+                <Shield className="h-4 w-4" />
+                <span className="hidden lg:inline">Emergências</span>
+                {stats.activeAlerts > 0 && (
+                  <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center animate-pulse">
+                    {stats.activeAlerts}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="cities" className="flex items-center gap-1 text-xs md:text-sm">
+                <MapPin className="h-4 w-4" />
+                <span className="hidden lg:inline">Cidades</span>
+              </TabsTrigger>
+              <TabsTrigger value="franchises" className="flex items-center gap-1 text-xs md:text-sm">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden lg:inline">Franquias</span>
+              </TabsTrigger>
+              <TabsTrigger value="billing" className="flex items-center gap-1 text-xs md:text-sm">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden lg:inline">Financeiro</span>
+              </TabsTrigger>
+              <TabsTrigger value="transfers" className="flex items-center gap-1 text-xs md:text-sm">
+                <ArrowRightLeft className="h-4 w-4" />
+                <span className="hidden lg:inline">Transferências</span>
+              </TabsTrigger>
+              <TabsTrigger value="pricing" className="flex items-center gap-1 text-xs md:text-sm">
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden lg:inline">Preços</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-1 text-xs md:text-sm">
+                <Users className="h-4 w-4" />
+                <span className="hidden lg:inline">Usuários</span>
+              </TabsTrigger>
+              <TabsTrigger value="marketing" className="flex items-center gap-1 text-xs md:text-sm">
+                <Megaphone className="h-4 w-4" />
+                <span className="hidden lg:inline">Marketing</span>
+              </TabsTrigger>
+              <TabsTrigger value="leads" className="flex items-center gap-1 text-xs md:text-sm">
+                <Crown className="h-4 w-4" />
+                <span className="hidden lg:inline">Leads</span>
+                {stats.pendingLeads > 0 && (
+                  <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                    {stats.pendingLeads}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview">
             <OverviewCharts franchises={franchises} cities={cities} />
@@ -157,6 +175,21 @@ export default function SuperAdminDashboard() {
 
           <TabsContent value="franchises">
             <FranchisesManagement franchises={franchises} cities={cities} onRefresh={fetchData} />
+          </TabsContent>
+
+          <TabsContent value="billing">
+            <FranchiseBillingManagement />
+          </TabsContent>
+
+          <TabsContent value="transfers">
+            <div className="space-y-6">
+              <FranchiseTransferManagement />
+              <DriverTransferRequests isSuperAdmin />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pricing">
+            <FranchisePricingConfig />
           </TabsContent>
 
           <TabsContent value="users">

@@ -690,6 +690,81 @@ export type Database = {
           },
         ]
       }
+      driver_transfer_requests: {
+        Row: {
+          driver_id: string
+          from_franchise_id: string
+          id: string
+          notes: string | null
+          rejection_reason: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          to_franchise_id: string
+        }
+        Insert: {
+          driver_id: string
+          from_franchise_id: string
+          id?: string
+          notes?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          to_franchise_id: string
+        }
+        Update: {
+          driver_id?: string
+          from_franchise_id?: string
+          id?: string
+          notes?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          to_franchise_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_transfer_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_transfer_requests_from_franchise_id_fkey"
+            columns: ["from_franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_transfer_requests_from_franchise_id_fkey"
+            columns: ["from_franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_transfer_requests_to_franchise_id_fkey"
+            columns: ["to_franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_transfer_requests_to_franchise_id_fkey"
+            columns: ["to_franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_verifications: {
         Row: {
           created_at: string
@@ -994,6 +1069,63 @@ export type Database = {
           },
         ]
       }
+      franchise_billing: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          franchise_id: string
+          id: string
+          is_prorated: boolean | null
+          paid_at: string | null
+          payment_id: string | null
+          payment_method: string | null
+          prorate_days: number | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date: string
+          franchise_id: string
+          id?: string
+          is_prorated?: boolean | null
+          paid_at?: string | null
+          payment_id?: string | null
+          payment_method?: string | null
+          prorate_days?: number | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          franchise_id?: string
+          id?: string
+          is_prorated?: boolean | null
+          paid_at?: string | null
+          payment_id?: string | null
+          payment_method?: string | null
+          prorate_days?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_billing_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_billing_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchise_credit_transactions: {
         Row: {
           amount: number
@@ -1186,25 +1318,93 @@ export type Database = {
           },
         ]
       }
+      franchise_transfer_history: {
+        Row: {
+          drivers_count: number | null
+          franchise_id: string
+          from_owner_id: string | null
+          id: string
+          merchants_count: number | null
+          notes: string | null
+          passengers_count: number | null
+          to_owner_id: string | null
+          transferred_at: string
+          transferred_by: string | null
+        }
+        Insert: {
+          drivers_count?: number | null
+          franchise_id: string
+          from_owner_id?: string | null
+          id?: string
+          merchants_count?: number | null
+          notes?: string | null
+          passengers_count?: number | null
+          to_owner_id?: string | null
+          transferred_at?: string
+          transferred_by?: string | null
+        }
+        Update: {
+          drivers_count?: number | null
+          franchise_id?: string
+          from_owner_id?: string | null
+          id?: string
+          merchants_count?: number | null
+          notes?: string | null
+          passengers_count?: number | null
+          to_owner_id?: string | null
+          transferred_at?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_transfer_history_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_transfer_history_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchises: {
         Row: {
           base_price: number | null
+          billing_blocked_at: string | null
+          billing_grace_until: string | null
+          billing_status: string | null
           city_id: string
           contract_end_date: string | null
           contract_start_date: string | null
+          courtesy_days: number | null
+          courtesy_granted_by: string | null
+          courtesy_reason: string | null
+          courtesy_until: string | null
           created_at: string
           credit_debit_per_ride: number | null
+          driver_charge_type: string | null
+          driver_charge_value: number | null
           driver_fee_amount: number | null
           driver_fee_type: string | null
           id: string
           is_active: boolean | null
+          last_payment_date: string | null
+          loyalty_enabled: boolean | null
+          loyalty_rides_for_free: number | null
           monthly_fee: number | null
           name: string
+          next_billing_date: string | null
           owner_id: string | null
           payment_api_key: string | null
           payment_gateway: string | null
           payment_webhook_url: string | null
           price_per_km: number | null
+          promo_absorb_cost: boolean | null
           surge_days: string[] | null
           surge_end_hour: number | null
           surge_fixed_amount: number | null
@@ -1212,26 +1412,41 @@ export type Database = {
           surge_keep_for_franchise: boolean | null
           surge_percentage: number | null
           surge_start_hour: number | null
+          trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
           base_price?: number | null
+          billing_blocked_at?: string | null
+          billing_grace_until?: string | null
+          billing_status?: string | null
           city_id: string
           contract_end_date?: string | null
           contract_start_date?: string | null
+          courtesy_days?: number | null
+          courtesy_granted_by?: string | null
+          courtesy_reason?: string | null
+          courtesy_until?: string | null
           created_at?: string
           credit_debit_per_ride?: number | null
+          driver_charge_type?: string | null
+          driver_charge_value?: number | null
           driver_fee_amount?: number | null
           driver_fee_type?: string | null
           id?: string
           is_active?: boolean | null
+          last_payment_date?: string | null
+          loyalty_enabled?: boolean | null
+          loyalty_rides_for_free?: number | null
           monthly_fee?: number | null
           name: string
+          next_billing_date?: string | null
           owner_id?: string | null
           payment_api_key?: string | null
           payment_gateway?: string | null
           payment_webhook_url?: string | null
           price_per_km?: number | null
+          promo_absorb_cost?: boolean | null
           surge_days?: string[] | null
           surge_end_hour?: number | null
           surge_fixed_amount?: number | null
@@ -1239,26 +1454,41 @@ export type Database = {
           surge_keep_for_franchise?: boolean | null
           surge_percentage?: number | null
           surge_start_hour?: number | null
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
           base_price?: number | null
+          billing_blocked_at?: string | null
+          billing_grace_until?: string | null
+          billing_status?: string | null
           city_id?: string
           contract_end_date?: string | null
           contract_start_date?: string | null
+          courtesy_days?: number | null
+          courtesy_granted_by?: string | null
+          courtesy_reason?: string | null
+          courtesy_until?: string | null
           created_at?: string
           credit_debit_per_ride?: number | null
+          driver_charge_type?: string | null
+          driver_charge_value?: number | null
           driver_fee_amount?: number | null
           driver_fee_type?: string | null
           id?: string
           is_active?: boolean | null
+          last_payment_date?: string | null
+          loyalty_enabled?: boolean | null
+          loyalty_rides_for_free?: number | null
           monthly_fee?: number | null
           name?: string
+          next_billing_date?: string | null
           owner_id?: string | null
           payment_api_key?: string | null
           payment_gateway?: string | null
           payment_webhook_url?: string | null
           price_per_km?: number | null
+          promo_absorb_cost?: boolean | null
           surge_days?: string[] | null
           surge_end_hour?: number | null
           surge_fixed_amount?: number | null
@@ -1266,6 +1496,7 @@ export type Database = {
           surge_keep_for_franchise?: boolean | null
           surge_percentage?: number | null
           surge_start_hour?: number | null
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1322,6 +1553,57 @@ export type Database = {
           },
           {
             foreignKeyName: "known_places_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_progress: {
+        Row: {
+          created_at: string
+          franchise_id: string
+          free_rides_earned: number | null
+          free_rides_used: number | null
+          id: string
+          last_free_ride_at: string | null
+          rides_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          franchise_id: string
+          free_rides_earned?: number | null
+          free_rides_used?: number | null
+          id?: string
+          last_free_ride_at?: string | null
+          rides_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          franchise_id?: string
+          free_rides_earned?: number | null
+          free_rides_used?: number | null
+          id?: string
+          last_free_ride_at?: string | null
+          rides_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_progress_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_progress_franchise_id_fkey"
             columns: ["franchise_id"]
             isOneToOne: false
             referencedRelation: "franchises_public"
@@ -1664,6 +1946,7 @@ export type Database = {
       }
       promotions: {
         Row: {
+          absorb_driver_cost: boolean | null
           code: string | null
           created_at: string
           description: string | null
@@ -1679,11 +1962,14 @@ export type Database = {
           min_ride_value: number | null
           name: string | null
           new_users_only: boolean | null
+          promo_type: string | null
+          rides_required: number | null
           uses_count: number | null
           valid_from: string | null
           valid_until: string | null
         }
         Insert: {
+          absorb_driver_cost?: boolean | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -1699,11 +1985,14 @@ export type Database = {
           min_ride_value?: number | null
           name?: string | null
           new_users_only?: boolean | null
+          promo_type?: string | null
+          rides_required?: number | null
           uses_count?: number | null
           valid_from?: string | null
           valid_until?: string | null
         }
         Update: {
+          absorb_driver_cost?: boolean | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -1719,6 +2008,8 @@ export type Database = {
           min_ride_value?: number | null
           name?: string | null
           new_users_only?: boolean | null
+          promo_type?: string | null
+          rides_required?: number | null
           uses_count?: number | null
           valid_from?: string | null
           valid_until?: string | null
@@ -2741,6 +3032,7 @@ export type Database = {
         Args: { p_driver_id: string; p_ride_id: string }
         Returns: Json
       }
+      check_franchise_billing_status: { Args: never; Returns: undefined }
       check_rate_limit: {
         Args: {
           p_action: string
@@ -2828,12 +3120,20 @@ export type Database = {
         }[]
       }
       get_user_franchise_id: { Args: { _user_id: string }; Returns: string }
+      grant_franchise_courtesy: {
+        Args: { p_days: number; p_franchise_id: string; p_reason?: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_loyalty_progress: {
+        Args: { p_franchise_id: string; p_user_id: string }
+        Returns: Json
       }
       log_security_event: {
         Args: {
@@ -2865,6 +3165,14 @@ export type Database = {
           _payment_webhook_url: string
         }
         Returns: undefined
+      }
+      transfer_franchise: {
+        Args: {
+          p_franchise_id: string
+          p_new_owner_id: string
+          p_notes?: string
+        }
+        Returns: Json
       }
       verify_franchise_isolation: {
         Args: { other_franchise_id: string; test_franchise_id: string }

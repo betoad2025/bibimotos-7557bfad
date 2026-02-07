@@ -67,6 +67,9 @@ export function CouponsManagement({ franchiseId }: CouponsManagementProps) {
     valid_from: "",
     valid_until: "",
     is_active: true,
+    absorb_driver_cost: false,
+    promo_type: "coupon",
+    rides_required: "",
   });
   const { toast } = useToast();
 
@@ -117,6 +120,9 @@ export function CouponsManagement({ franchiseId }: CouponsManagementProps) {
         valid_from: formData.valid_from || null,
         valid_until: formData.valid_until || null,
         is_active: formData.is_active,
+        absorb_driver_cost: formData.absorb_driver_cost,
+        promo_type: formData.promo_type,
+        rides_required: formData.rides_required ? parseInt(formData.rides_required) : null,
       };
 
       if (editingCoupon) {
@@ -184,6 +190,9 @@ export function CouponsManagement({ franchiseId }: CouponsManagementProps) {
       valid_from: coupon.valid_from?.split("T")[0] || "",
       valid_until: coupon.valid_until?.split("T")[0] || "",
       is_active: coupon.is_active || false,
+      absorb_driver_cost: (coupon as any).absorb_driver_cost || false,
+      promo_type: (coupon as any).promo_type || "coupon",
+      rides_required: (coupon as any).rides_required?.toString() || "",
     });
     setDialogOpen(true);
   };
@@ -204,6 +213,9 @@ export function CouponsManagement({ franchiseId }: CouponsManagementProps) {
       valid_from: "",
       valid_until: "",
       is_active: true,
+      absorb_driver_cost: false,
+      promo_type: "coupon",
+      rides_required: "",
     });
   };
 
@@ -398,6 +410,20 @@ export function CouponsManagement({ franchiseId }: CouponsManagementProps) {
                       checked={formData.new_users_only}
                       onCheckedChange={(checked) =>
                         setFormData({ ...formData, new_users_only: checked })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between border-t pt-3">
+                    <div>
+                      <p className="font-medium">Não impactar ganhos do motoboy</p>
+                      <p className="text-xs text-muted-foreground">
+                        Franquia absorve o custo - motoboy recebe crédito automático
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.absorb_driver_cost}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, absorb_driver_cost: checked })
                       }
                     />
                   </div>
