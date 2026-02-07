@@ -28,7 +28,7 @@ interface UserProfileSettingsProps {
 }
 
 export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
-  const { user, profile, roles } = useAuth();
+  const { user, profile, roles, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -134,6 +134,10 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
         .eq('user_id', user.id);
 
       if (error) throw error;
+      
+      // Refresh profile data in context
+      await refreshProfile();
+      
       toast.success("Perfil atualizado com sucesso!");
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar perfil");
