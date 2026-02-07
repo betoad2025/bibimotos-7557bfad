@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  MapPin, Building2, Users, Crown, BarChart3, Activity, Shield, Megaphone,
-  CreditCard, ArrowRightLeft, Settings, DollarSign
-} from "lucide-react";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SuperAdminSidebar } from "@/components/superadmin/SuperAdminSidebar";
 import { SuperAdminHeader } from "@/components/superadmin/SuperAdminHeader";
 import { StatsCards } from "@/components/superadmin/StatsCards";
 import { CitiesManagement } from "@/components/superadmin/CitiesManagement";
@@ -19,8 +16,12 @@ import { FranchiseBillingManagement } from "@/components/superadmin/FranchiseBil
 import { FranchiseTransferManagement } from "@/components/superadmin/FranchiseTransferManagement";
 import { FranchisePricingConfig } from "@/components/superadmin/FranchisePricingConfig";
 import { DriverTransferRequests } from "@/components/superadmin/DriverTransferRequests";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function SuperAdminDashboard() {
+  const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({
     totalCities: 0,
     activeFranchises: 0,
@@ -35,6 +36,7 @@ export default function SuperAdminDashboard() {
   const [cities, setCities] = useState<any[]>([]);
   const [franchises, setFranchises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchData();
@@ -90,121 +92,72 @@ export default function SuperAdminDashboard() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <SuperAdminHeader pendingLeads={stats.pendingLeads} />
-
-      <div className="p-6 space-y-6">
-        <StatsCards stats={stats} />
-
-        <Tabs defaultValue="overview" className="space-y-6">
-          <div className="overflow-x-auto">
-            <TabsList className="grid w-max min-w-full grid-cols-11 gap-1">
-              <TabsTrigger value="overview" className="flex items-center gap-1 text-xs md:text-sm">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden lg:inline">Visão Geral</span>
-              </TabsTrigger>
-              <TabsTrigger value="monitoring" className="flex items-center gap-1 text-xs md:text-sm">
-                <Activity className="h-4 w-4" />
-                <span className="hidden lg:inline">Monitoramento</span>
-              </TabsTrigger>
-              <TabsTrigger value="emergency" className="flex items-center gap-1 text-xs md:text-sm relative">
-                <Shield className="h-4 w-4" />
-                <span className="hidden lg:inline">Emergências</span>
-                {stats.activeAlerts > 0 && (
-                  <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center animate-pulse">
-                    {stats.activeAlerts}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="cities" className="flex items-center gap-1 text-xs md:text-sm">
-                <MapPin className="h-4 w-4" />
-                <span className="hidden lg:inline">Cidades</span>
-              </TabsTrigger>
-              <TabsTrigger value="franchises" className="flex items-center gap-1 text-xs md:text-sm">
-                <Building2 className="h-4 w-4" />
-                <span className="hidden lg:inline">Franquias</span>
-              </TabsTrigger>
-              <TabsTrigger value="billing" className="flex items-center gap-1 text-xs md:text-sm">
-                <CreditCard className="h-4 w-4" />
-                <span className="hidden lg:inline">Financeiro</span>
-              </TabsTrigger>
-              <TabsTrigger value="transfers" className="flex items-center gap-1 text-xs md:text-sm">
-                <ArrowRightLeft className="h-4 w-4" />
-                <span className="hidden lg:inline">Transferências</span>
-              </TabsTrigger>
-              <TabsTrigger value="pricing" className="flex items-center gap-1 text-xs md:text-sm">
-                <DollarSign className="h-4 w-4" />
-                <span className="hidden lg:inline">Preços</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-1 text-xs md:text-sm">
-                <Users className="h-4 w-4" />
-                <span className="hidden lg:inline">Usuários</span>
-              </TabsTrigger>
-              <TabsTrigger value="marketing" className="flex items-center gap-1 text-xs md:text-sm">
-                <Megaphone className="h-4 w-4" />
-                <span className="hidden lg:inline">Marketing</span>
-              </TabsTrigger>
-              <TabsTrigger value="leads" className="flex items-center gap-1 text-xs md:text-sm">
-                <Crown className="h-4 w-4" />
-                <span className="hidden lg:inline">Leads</span>
-                {stats.pendingLeads > 0 && (
-                  <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-                    {stats.pendingLeads}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
+  const renderContent = () => {
+    switch (activeTab) {
+      case "overview":
+        return <OverviewCharts franchises={franchises} cities={cities} />;
+      case "monitoring":
+        return <RideMonitoring />;
+      case "emergency":
+        return <EmergencyAlerts />;
+      case "cities":
+        return <CitiesManagement cities={cities} onRefresh={fetchData} />;
+      case "franchises":
+        return <FranchisesManagement franchises={franchises} cities={cities} onRefresh={fetchData} />;
+      case "billing":
+        return <FranchiseBillingManagement />;
+      case "transfers":
+        return (
+          <div className="space-y-6">
+            <FranchiseTransferManagement />
+            <DriverTransferRequests isSuperAdmin />
           </div>
+        );
+      case "pricing":
+        return <FranchisePricingConfig />;
+      case "users":
+        return <UsersManagement />;
+      case "marketing":
+        return <GlobalMarketingPanel />;
+      case "leads":
+        return <LeadsManagement />;
+      default:
+        return <OverviewCharts franchises={franchises} cities={cities} />;
+    }
+  };
 
-          <TabsContent value="overview">
-            <OverviewCharts franchises={franchises} cities={cities} />
-          </TabsContent>
+  return (
+    <SidebarProvider defaultOpen={!isMobile}>
+      <div className="min-h-screen flex w-full bg-background">
+        <SuperAdminSidebar 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          pendingLeads={stats.pendingLeads}
+          activeAlerts={stats.activeAlerts}
+        />
+        
+        <SidebarInset className="flex flex-col flex-1">
+          <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
+            <SidebarTrigger>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SidebarTrigger>
+            <span className="font-semibold text-primary">Bibi Motos</span>
+          </header>
 
-          <TabsContent value="monitoring">
-            <RideMonitoring />
-          </TabsContent>
-
-          <TabsContent value="emergency">
-            <EmergencyAlerts />
-          </TabsContent>
-
-          <TabsContent value="cities">
-            <CitiesManagement cities={cities} onRefresh={fetchData} />
-          </TabsContent>
-
-          <TabsContent value="franchises">
-            <FranchisesManagement franchises={franchises} cities={cities} onRefresh={fetchData} />
-          </TabsContent>
-
-          <TabsContent value="billing">
-            <FranchiseBillingManagement />
-          </TabsContent>
-
-          <TabsContent value="transfers">
-            <div className="space-y-6">
-              <FranchiseTransferManagement />
-              <DriverTransferRequests isSuperAdmin />
+          <div className="flex-1 overflow-auto">
+            <div className="hidden md:block">
+              <SuperAdminHeader pendingLeads={stats.pendingLeads} />
             </div>
-          </TabsContent>
 
-          <TabsContent value="pricing">
-            <FranchisePricingConfig />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UsersManagement />
-          </TabsContent>
-
-          <TabsContent value="marketing">
-            <GlobalMarketingPanel />
-          </TabsContent>
-
-          <TabsContent value="leads">
-            <LeadsManagement />
-          </TabsContent>
-        </Tabs>
+            <div className="p-4 md:p-6 space-y-6">
+              <StatsCards stats={stats} />
+              {renderContent()}
+            </div>
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
