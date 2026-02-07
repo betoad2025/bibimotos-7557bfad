@@ -3089,6 +3089,10 @@ export type Database = {
         Args: { p_driver_id: string; p_ride_id: string }
         Returns: Json
       }
+      can_view_franchise_driver_documents: {
+        Args: { bucket: string; file_name: string }
+        Returns: boolean
+      }
       check_franchise_billing_status: { Args: never; Returns: undefined }
       check_rate_limit: {
         Args: {

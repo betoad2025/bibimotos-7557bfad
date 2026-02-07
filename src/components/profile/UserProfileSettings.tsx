@@ -22,6 +22,7 @@ import {
   Key,
   Loader2
 } from "lucide-react";
+import { ImageCropModal } from "./ImageCropModal";
 
 interface UserProfileSettingsProps {
   onClose: () => void;
@@ -33,6 +34,8 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     full_name: "",
@@ -66,7 +69,7 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
     }
   }, [profile]);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -75,20 +78,36 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 10MB");
       return;
     }
 
+    // Create preview URL and open crop modal
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImage(imageUrl);
+    setCropModalOpen(true);
+    
+    // Clear input
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user) return;
+    
+    setCropModalOpen(false);
     setUploading(true);
+    
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}-${Date.now()}.jpg`;
       const filePath = `avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profiles')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, croppedBlob, { 
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -103,13 +122,17 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
 
       if (updateError) throw updateError;
 
+      await refreshProfile();
       toast.success("Foto atualizada com sucesso!");
-      window.location.reload();
     } catch (error: any) {
       console.error("Error uploading avatar:", error);
       toast.error(error.message || "Erro ao fazer upload da foto");
     } finally {
       setUploading(false);
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+        setSelectedImage(null);
+      }
     }
   };
 
@@ -192,7 +215,24 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
     .slice(0, 2);
 
   return (
-    <Tabs defaultValue="profile" className="w-full">
+    <>
+      {/* Image Crop Modal */}
+      {selectedImage && (
+        <ImageCropModal
+          open={cropModalOpen}
+          onClose={() => {
+            setCropModalOpen(false);
+            URL.revokeObjectURL(selectedImage);
+            setSelectedImage(null);
+          }}
+          imageSrc={selectedImage}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+          circularCrop={true}
+        />
+      )}
+
+      <Tabs defaultValue="profile" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="profile" className="flex items-center gap-2">
           <User className="h-4 w-4" />
@@ -236,7 +276,7 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={handleAvatarChange}
+              onChange={handleAvatarSelect}
             />
           </div>
           <div>
@@ -503,5 +543,6 @@ export function UserProfileSettings({ onClose }: UserProfileSettingsProps) {
         </Card>
       </TabsContent>
     </Tabs>
+    </>
   );
 }
