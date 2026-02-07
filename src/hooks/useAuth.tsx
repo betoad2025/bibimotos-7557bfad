@@ -15,6 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
+  refreshProfile: () => Promise<void>;
   isSuperAdmin: boolean;
   isFranchiseAdmin: boolean;
   isDriver: boolean;
@@ -56,6 +57,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (profileData) {
+        setProfile(profileData);
+      }
     }
   };
 
@@ -141,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     hasRole,
+    refreshProfile,
     isSuperAdmin: hasRole('super_admin'),
     isFranchiseAdmin: hasRole('franchise_admin'),
     isDriver: hasRole('driver'),
