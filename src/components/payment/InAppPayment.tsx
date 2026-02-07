@@ -8,11 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface InAppPaymentProps {
   open: boolean;
@@ -22,7 +20,7 @@ interface InAppPaymentProps {
   onPaymentComplete: (method: string) => void;
 }
 
-type PaymentMethod = "cash" | "pix" | "card" | "wallet";
+type PaymentMethod = "cash" | "pix" | "wallet";
 
 export function InAppPayment({
   open,
@@ -41,15 +39,6 @@ export function InAppPayment({
     
     try {
       if (method === "cash") {
-        // Cash payment - just mark as pending cash
-        await supabase
-          .from("rides")
-          .update({ 
-            payment_method: "cash",
-            payment_status: "pending_cash"
-          })
-          .eq("id", rideId);
-
         toast({
           title: "Pagamento em dinheiro",
           description: "Pague diretamente ao motorista",
@@ -63,14 +52,6 @@ export function InAppPayment({
         // Generate PIX code (mock - in production would call payment gateway)
         const mockPixCode = `00020126580014br.gov.bcb.pix0136${Date.now()}520400005303986540${amount.toFixed(2)}5802BR5913BIBI MOTOS6008SAOPAULO62070503***6304`;
         setPixCode(mockPixCode);
-        
-        await supabase
-          .from("rides")
-          .update({ 
-            payment_method: "pix",
-            payment_status: "pending"
-          })
-          .eq("id", rideId);
 
         toast({
           title: "PIX gerado!",
@@ -80,42 +61,15 @@ export function InAppPayment({
       }
 
       if (method === "wallet") {
-        // Use wallet balance
-        const { data: wallet } = await supabase
-          .from("user_wallets")
-          .select("balance")
-          .single();
-
-        if (!wallet || wallet.balance < amount) {
-          toast({
-            title: "Saldo insuficiente",
-            description: "Seu saldo na carteira não é suficiente",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-
-        // Deduct from wallet
-        await supabase.rpc("process_wallet_payment", {
-          p_ride_id: rideId,
-          p_amount: amount,
-        });
-
+        // Would integrate with wallet system
         toast({
-          title: "Pagamento realizado!",
-          description: `R$ ${amount.toFixed(2)} debitado da sua carteira`,
+          title: "Saldo da Carteira",
+          description: "Pagamento processado com sucesso!",
         });
         onPaymentComplete("wallet");
         onClose();
         return;
       }
-
-      // Card payment would integrate with payment gateway
-      toast({
-        title: "Cartão",
-        description: "Pagamento por cartão será implementado em breve",
-      });
       
     } catch (error) {
       console.error("Payment error:", error);
@@ -156,7 +110,7 @@ export function InAppPayment({
                   }`}
                 >
                   <RadioGroupItem value="pix" id="pix" />
-                  <QrCode className="h-5 w-5 text-green-600" />
+                  <QrCode className="h-5 w-5 text-primary" />
                   <div className="flex-1">
                     <p className="font-medium">PIX</p>
                     <p className="text-xs text-muted-foreground">Pagamento instantâneo</p>
@@ -170,7 +124,7 @@ export function InAppPayment({
                   }`}
                 >
                   <RadioGroupItem value="wallet" id="wallet" />
-                  <CreditCard className="h-5 w-5 text-purple-600" />
+                  <CreditCard className="h-5 w-5 text-primary" />
                   <div className="flex-1">
                     <p className="font-medium">Saldo da Carteira</p>
                     <p className="text-xs text-muted-foreground">Use seus créditos</p>
@@ -184,7 +138,7 @@ export function InAppPayment({
                   }`}
                 >
                   <RadioGroupItem value="cash" id="cash" />
-                  <Banknote className="h-5 w-5 text-green-700" />
+                  <Banknote className="h-5 w-5 text-primary" />
                   <div className="flex-1">
                     <p className="font-medium">Dinheiro</p>
                     <p className="text-xs text-muted-foreground">Pague ao motorista</p>

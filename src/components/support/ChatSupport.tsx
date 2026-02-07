@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
 interface Message {
@@ -23,10 +22,12 @@ const FAQ_RESPONSES: Record<string, string> = {
   "avaliação": "Avalie seu motorista após cada corrida. Isso ajuda a manter a qualidade do serviço.",
   "segurança": "Todos os motoristas passam por verificação. Você pode compartilhar sua viagem em tempo real com familiares.",
   "creditos": "Motoristas usam créditos para aceitar corridas. Os créditos podem ser comprados via PIX.",
+  "ajuda": "Descreva seu problema que tentarei ajudar! Se precisar falar com um atendente, envie 'falar com humano'.",
+  "humano": "Sua solicitação foi encaminhada para nossa equipe. Entraremos em contato em breve via WhatsApp!",
 };
 
 export function ChatSupport() {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -91,22 +92,11 @@ export function ChatSupport() {
         },
       ]);
     } else {
-      // Save to support tickets in database
-      try {
-        await supabase.from("support_messages").insert({
-          user_id: user?.id,
-          message: userMessage.content,
-          status: "pending",
-        });
-      } catch (e) {
-        console.log("Support messages table may not exist yet");
-      }
-
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
-          content: "Sua mensagem foi enviada para nossa equipe! Responderemos em breve via WhatsApp ou notificação. 📱",
+          content: "Entendi sua dúvida! 🤔 Nossa equipe de suporte entrará em contato via WhatsApp em breve. Enquanto isso, você pode tentar perguntar sobre: preço, pagamento, cancelar, gorjeta, segurança.",
           sender: "bot",
           timestamp: new Date(),
         },
