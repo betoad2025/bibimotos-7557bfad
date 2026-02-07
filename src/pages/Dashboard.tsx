@@ -5,6 +5,7 @@ import SuperAdminDashboard from "./dashboard/SuperAdminDashboard";
 import FranchiseAdminDashboard from "./dashboard/FranchiseAdminDashboard";
 import DriverDashboard from "./dashboard/DriverDashboard";
 import PassengerDashboard from "./dashboard/PassengerDashboard";
+import MerchantDashboard from "./dashboard/MerchantDashboard";
 
 export default function Dashboard() {
   const { user, loading, roles, isSuperAdmin, isFranchiseAdmin, isDriver, isPassenger, isMerchant } = useAuth();
@@ -46,15 +47,26 @@ export default function Dashboard() {
   }
 
   if (isMerchant) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Dashboard do Lojista</h1>
-          <p className="text-muted-foreground">Em desenvolvimento...</p>
-        </div>
-      </div>
-    );
+    return <MerchantDashboard />;
   }
+
+  // Default: user without role - show complete registration
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-background">
+      <div className="text-center max-w-md p-8">
+        <h1 className="text-2xl font-bold mb-4">Bem-vindo!</h1>
+        <p className="text-muted-foreground mb-6">
+          Seu cadastro está em análise. Em breve você terá acesso ao sistema.
+        </p>
+        <button 
+          onClick={() => navigate('/complete-registration')}
+          className="text-purple-600 hover:underline"
+        >
+          Completar cadastro
+        </button>
+      </div>
+    </div>
+  );
 
   // Default: user without role - show complete registration
   return (

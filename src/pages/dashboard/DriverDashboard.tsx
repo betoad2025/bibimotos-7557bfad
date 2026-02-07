@@ -22,7 +22,13 @@ import {
   History,
   LogOut,
   Bike,
+  ArrowRightLeft,
 } from "lucide-react";
+import { CreditsShop } from "@/components/driver/CreditsShop";
+import { RideHistory } from "@/components/ride/RideHistory";
+import { DriverTransferRequest } from "@/components/driver/DriverTransferRequest";
+import { useState as useTabState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DriverData {
   id: string;
@@ -359,18 +365,37 @@ export default function DriverDashboard() {
           />
         )}
 
-        {/* Actions */}
+        {/* Actions Tabs */}
         {!hasActiveRide && (
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-              <CreditCard className="h-6 w-6" />
-              <span>Comprar Créditos</span>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-              <History className="h-6 w-6" />
-              <span>Histórico</span>
-            </Button>
-          </div>
+          <Tabs defaultValue="credits" className="space-y-4">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="credits">Créditos</TabsTrigger>
+              <TabsTrigger value="history">Histórico</TabsTrigger>
+              <TabsTrigger value="transfer">Transferência</TabsTrigger>
+            </TabsList>
+            <TabsContent value="credits">
+              <CreditsShop
+                driverId={driverData.id}
+                franchiseId={driverData.franchise_id}
+                currentCredits={driverData.credits}
+                onCreditsUpdated={fetchDriverData}
+              />
+            </TabsContent>
+            <TabsContent value="history">
+              <RideHistory
+                userId={user?.id || ""}
+                userType="driver"
+                driverId={driverData.id}
+              />
+            </TabsContent>
+            <TabsContent value="transfer">
+              <DriverTransferRequest
+                driverId={driverData.id}
+                currentFranchiseId={driverData.franchise_id}
+                currentFranchiseName="Franquia Atual"
+              />
+            </TabsContent>
+          </Tabs>
         )}
       </main>
 
