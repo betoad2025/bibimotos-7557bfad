@@ -3135,6 +3135,14 @@ export type Database = {
         Args: { p_franchise_id: string; p_user_id: string }
         Returns: Json
       }
+      is_franchise_admin_for_user: {
+        Args: { _admin_user_id: string; _target_user_id: string }
+        Returns: boolean
+      }
+      is_owner_of_franchise: {
+        Args: { _franchise_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_security_event: {
         Args: {
           p_action: string
