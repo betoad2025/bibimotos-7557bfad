@@ -146,6 +146,48 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_usages: {
+        Row: {
+          discount_applied: number
+          id: string
+          promotion_id: string
+          ride_id: string | null
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          discount_applied: number
+          id?: string
+          promotion_id: string
+          ride_id?: string | null
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          discount_applied?: number
+          id?: string
+          promotion_id?: string
+          ride_id?: string | null
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usages_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usages_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -370,6 +412,135 @@ export type Database = {
           },
         ]
       }
+      demand_bonus_claims: {
+        Row: {
+          bonus_earned: number | null
+          bonus_id: string
+          completed_at: string | null
+          created_at: string
+          driver_id: string
+          id: string
+          paid_at: string | null
+          rides_completed: number | null
+          status: string | null
+        }
+        Insert: {
+          bonus_earned?: number | null
+          bonus_id: string
+          completed_at?: string | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          paid_at?: string | null
+          rides_completed?: number | null
+          status?: string | null
+        }
+        Update: {
+          bonus_earned?: number | null
+          bonus_id?: string
+          completed_at?: string | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          paid_at?: string | null
+          rides_completed?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demand_bonus_claims_bonus_id_fkey"
+            columns: ["bonus_id"]
+            isOneToOne: false
+            referencedRelation: "demand_bonuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demand_bonus_claims_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demand_bonuses: {
+        Row: {
+          bonus_type: string
+          bonus_value: number
+          created_at: string
+          current_claims: number | null
+          days_of_week: string[] | null
+          end_time: string | null
+          franchise_id: string
+          id: string
+          is_active: boolean | null
+          max_claims: number | null
+          min_rides_required: number | null
+          name: string
+          start_time: string | null
+          valid_from: string | null
+          valid_until: string | null
+          zone_lat: number | null
+          zone_lng: number | null
+          zone_radius_km: number | null
+        }
+        Insert: {
+          bonus_type: string
+          bonus_value: number
+          created_at?: string
+          current_claims?: number | null
+          days_of_week?: string[] | null
+          end_time?: string | null
+          franchise_id: string
+          id?: string
+          is_active?: boolean | null
+          max_claims?: number | null
+          min_rides_required?: number | null
+          name: string
+          start_time?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          zone_lat?: number | null
+          zone_lng?: number | null
+          zone_radius_km?: number | null
+        }
+        Update: {
+          bonus_type?: string
+          bonus_value?: number
+          created_at?: string
+          current_claims?: number | null
+          days_of_week?: string[] | null
+          end_time?: string | null
+          franchise_id?: string
+          id?: string
+          is_active?: boolean | null
+          max_claims?: number | null
+          min_rides_required?: number | null
+          name?: string
+          start_time?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          zone_lat?: number | null
+          zone_lng?: number | null
+          zone_radius_km?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demand_bonuses_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demand_bonuses_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_approval_requests: {
         Row: {
           created_at: string | null
@@ -434,6 +605,138 @@ export type Database = {
           },
         ]
       }
+      driver_financial_reports: {
+        Row: {
+          average_rating: number | null
+          breakdown: Json | null
+          cancellation_rate: number | null
+          driver_id: string
+          franchise_id: string
+          generated_at: string
+          id: string
+          net_earnings: number | null
+          online_hours: number | null
+          peak_hours_worked: number | null
+          period_end: string
+          period_start: string
+          report_type: string
+          total_bonuses: number | null
+          total_credits_used: number | null
+          total_earnings: number | null
+          total_rides: number | null
+          total_tips: number | null
+        }
+        Insert: {
+          average_rating?: number | null
+          breakdown?: Json | null
+          cancellation_rate?: number | null
+          driver_id: string
+          franchise_id: string
+          generated_at?: string
+          id?: string
+          net_earnings?: number | null
+          online_hours?: number | null
+          peak_hours_worked?: number | null
+          period_end: string
+          period_start: string
+          report_type: string
+          total_bonuses?: number | null
+          total_credits_used?: number | null
+          total_earnings?: number | null
+          total_rides?: number | null
+          total_tips?: number | null
+        }
+        Update: {
+          average_rating?: number | null
+          breakdown?: Json | null
+          cancellation_rate?: number | null
+          driver_id?: string
+          franchise_id?: string
+          generated_at?: string
+          id?: string
+          net_earnings?: number | null
+          online_hours?: number | null
+          peak_hours_worked?: number | null
+          period_end?: string
+          period_start?: string
+          report_type?: string
+          total_bonuses?: number | null
+          total_credits_used?: number | null
+          total_earnings?: number | null
+          total_rides?: number | null
+          total_tips?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_financial_reports_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_financial_reports_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_financial_reports_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_verifications: {
+        Row: {
+          created_at: string
+          driver_id: string
+          expires_at: string | null
+          id: string
+          photo_url: string | null
+          rejection_reason: string | null
+          status: string | null
+          verification_type: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          expires_at?: string | null
+          id?: string
+          photo_url?: string | null
+          rejection_reason?: string | null
+          status?: string | null
+          verification_type: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          expires_at?: string | null
+          id?: string
+          photo_url?: string | null
+          rejection_reason?: string | null
+          status?: string | null
+          verification_type?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_verifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           cnh_back_url: string | null
@@ -451,10 +754,12 @@ export type Database = {
           insurance_document_url: string | null
           is_approved: boolean | null
           is_online: boolean | null
+          last_verification_at: string | null
           motorcycle_photo_url: string | null
           motorcycle_plate_photo_url: string | null
           rating: number | null
           registration_complete: boolean | null
+          requires_verification: boolean | null
           total_rides: number | null
           updated_at: string
           user_id: string
@@ -479,10 +784,12 @@ export type Database = {
           insurance_document_url?: string | null
           is_approved?: boolean | null
           is_online?: boolean | null
+          last_verification_at?: string | null
           motorcycle_photo_url?: string | null
           motorcycle_plate_photo_url?: string | null
           rating?: number | null
           registration_complete?: boolean | null
+          requires_verification?: boolean | null
           total_rides?: number | null
           updated_at?: string
           user_id: string
@@ -507,10 +814,12 @@ export type Database = {
           insurance_document_url?: string | null
           is_approved?: boolean | null
           is_online?: boolean | null
+          last_verification_at?: string | null
           motorcycle_photo_url?: string | null
           motorcycle_plate_photo_url?: string | null
           rating?: number | null
           registration_complete?: boolean | null
+          requires_verification?: boolean | null
           total_rides?: number | null
           updated_at?: string
           user_id?: string
@@ -1360,12 +1669,16 @@ export type Database = {
           description: string | null
           discount_type: string | null
           discount_value: number
+          first_ride_only: boolean | null
           franchise_id: string | null
           id: string
           is_active: boolean | null
           is_global: boolean | null
+          max_discount_value: number | null
           max_uses: number | null
           min_ride_value: number | null
+          name: string | null
+          new_users_only: boolean | null
           uses_count: number | null
           valid_from: string | null
           valid_until: string | null
@@ -1376,12 +1689,16 @@ export type Database = {
           description?: string | null
           discount_type?: string | null
           discount_value: number
+          first_ride_only?: boolean | null
           franchise_id?: string | null
           id?: string
           is_active?: boolean | null
           is_global?: boolean | null
+          max_discount_value?: number | null
           max_uses?: number | null
           min_ride_value?: number | null
+          name?: string | null
+          new_users_only?: boolean | null
           uses_count?: number | null
           valid_from?: string | null
           valid_until?: string | null
@@ -1392,12 +1709,16 @@ export type Database = {
           description?: string | null
           discount_type?: string | null
           discount_value?: number
+          first_ride_only?: boolean | null
           franchise_id?: string | null
           id?: string
           is_active?: boolean | null
           is_global?: boolean | null
+          max_discount_value?: number | null
           max_uses?: number | null
           min_ride_value?: number | null
+          name?: string | null
+          new_users_only?: boolean | null
           uses_count?: number | null
           valid_from?: string | null
           valid_until?: string | null
@@ -1452,6 +1773,89 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          referee_bonus: number | null
+          referral_bonus: number | null
+          total_earned: number | null
+          total_referrals: number | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          referee_bonus?: number | null
+          referral_bonus?: number | null
+          total_earned?: number | null
+          total_referrals?: number | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          referee_bonus?: number | null
+          referral_bonus?: number | null
+          total_earned?: number | null
+          total_referrals?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          bonus_paid_at: string | null
+          created_at: string
+          first_ride_at: string | null
+          id: string
+          referee_bonus_paid: number | null
+          referee_user_id: string
+          referral_code_id: string
+          referrer_bonus_paid: number | null
+          referrer_user_id: string
+          status: string | null
+        }
+        Insert: {
+          bonus_paid_at?: string | null
+          created_at?: string
+          first_ride_at?: string | null
+          id?: string
+          referee_bonus_paid?: number | null
+          referee_user_id: string
+          referral_code_id: string
+          referrer_bonus_paid?: number | null
+          referrer_user_id: string
+          status?: string | null
+        }
+        Update: {
+          bonus_paid_at?: string | null
+          created_at?: string
+          first_ride_at?: string | null
+          id?: string
+          referee_bonus_paid?: number | null
+          referee_user_id?: string
+          referral_code_id?: string
+          referrer_bonus_paid?: number | null
+          referrer_user_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_location_logs: {
         Row: {
           accuracy: number | null
@@ -1503,6 +1907,59 @@ export type Database = {
           },
         ]
       }
+      ride_shares: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          last_viewed_at: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          ride_id: string
+          share_token: string
+          shared_by: string
+          views_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          last_viewed_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          ride_id: string
+          share_token: string
+          shared_by: string
+          views_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_viewed_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          ride_id?: string
+          share_token?: string
+          shared_by?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_shares_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rides: {
         Row: {
           cancellation_reason: string | null
@@ -1531,6 +1988,8 @@ export type Database = {
           started_at: string | null
           status: Database["public"]["Enums"]["ride_status"] | null
           surge_amount: number | null
+          tip_amount: number | null
+          tip_paid_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1560,6 +2019,8 @@ export type Database = {
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
           surge_amount?: number | null
+          tip_amount?: number | null
+          tip_paid_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1589,6 +2050,8 @@ export type Database = {
           started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
           surge_amount?: number | null
+          tip_amount?: number | null
+          tip_paid_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1618,6 +2081,164 @@ export type Database = {
             columns: ["passenger_id"]
             isOneToOne: false
             referencedRelation: "passengers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_incidents: {
+        Row: {
+          created_at: string
+          description: string | null
+          franchise_id: string
+          id: string
+          incident_type: string
+          lat: number
+          lng: number
+          reported_by: string
+          reporter_type: string
+          resolved_at: string | null
+          resolved_by: string | null
+          ride_id: string | null
+          severity: string | null
+          status: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          franchise_id: string
+          id?: string
+          incident_type: string
+          lat: number
+          lng: number
+          reported_by: string
+          reporter_type: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          ride_id?: string | null
+          severity?: string | null
+          status?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          franchise_id?: string
+          id?: string
+          incident_type?: string
+          lat?: number
+          lng?: number
+          reported_by?: string
+          reporter_type?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          ride_id?: string | null
+          severity?: string | null
+          status?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_incidents_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_incidents_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_incidents_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_incidents_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "risk_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_zones: {
+        Row: {
+          block_reason: string | null
+          center_lat: number | null
+          center_lng: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          franchise_id: string
+          id: string
+          incidents_count: number | null
+          is_active: boolean | null
+          is_blocked: boolean | null
+          last_incident_at: string | null
+          name: string
+          polygon_coords: Json
+          radius_meters: number | null
+          risk_level: string
+          updated_at: string
+        }
+        Insert: {
+          block_reason?: string | null
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          franchise_id: string
+          id?: string
+          incidents_count?: number | null
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          last_incident_at?: string | null
+          name: string
+          polygon_coords: Json
+          radius_meters?: number | null
+          risk_level: string
+          updated_at?: string
+        }
+        Update: {
+          block_reason?: string | null
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          franchise_id?: string
+          id?: string
+          incidents_count?: number | null
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          last_incident_at?: string | null
+          name?: string
+          polygon_coords?: Json
+          radius_meters?: number | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_zones_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_zones_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1657,6 +2278,72 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          billing_period: string
+          created_at: string
+          description: string | null
+          discount_percentage: number | null
+          exclusive_promotions: boolean | null
+          features: Json | null
+          franchise_id: string | null
+          free_cancellations: number | null
+          id: string
+          is_active: boolean | null
+          is_global: boolean | null
+          name: string
+          price: number
+          priority_matching: boolean | null
+        }
+        Insert: {
+          billing_period: string
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number | null
+          exclusive_promotions?: boolean | null
+          features?: Json | null
+          franchise_id?: string | null
+          free_cancellations?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          name: string
+          price: number
+          priority_matching?: boolean | null
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number | null
+          exclusive_promotions?: boolean | null
+          features?: Json | null
+          franchise_id?: string | null
+          free_cancellations?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          name?: string
+          price?: number
+          priority_matching?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_conversations: {
         Row: {
@@ -1753,6 +2440,72 @@ export type Database = {
           },
         ]
       }
+      tip_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string
+          franchise_id: string
+          id: string
+          passenger_id: string
+          ride_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          driver_id: string
+          franchise_id: string
+          id?: string
+          passenger_id: string
+          ride_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          franchise_id?: string
+          id?: string
+          passenger_id?: string
+          ride_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tip_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_transactions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_transactions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_transactions_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "passengers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_transactions_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_role_preferences: {
         Row: {
           id: string
@@ -1794,6 +2547,153 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          franchise_id: string | null
+          id: string
+          last_payment_at: string | null
+          next_payment_at: string | null
+          payment_method: string | null
+          plan_id: string
+          started_at: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end: string
+          current_period_start: string
+          franchise_id?: string | null
+          id?: string
+          last_payment_at?: string | null
+          next_payment_at?: string | null
+          payment_method?: string | null
+          plan_id: string
+          started_at?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          franchise_id?: string | null
+          id?: string
+          last_payment_at?: string | null
+          next_payment_at?: string | null
+          payment_method?: string | null
+          plan_id?: string
+          started_at?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_subscriptions_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_wallets: {
+        Row: {
+          balance: number | null
+          created_at: string
+          id: string
+          total_earned: number | null
+          total_spent: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string
+          id?: string
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string
+          id?: string
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "user_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1856,6 +2756,14 @@ export type Database = {
           p_driver_rating?: number
           p_final_price: number
           p_passenger_rating?: number
+          p_ride_id: string
+        }
+        Returns: Json
+      }
+      create_ride_share: {
+        Args: {
+          p_recipient_name?: string
+          p_recipient_phone?: string
           p_ride_id: string
         }
         Returns: Json
@@ -1943,6 +2851,10 @@ export type Database = {
           p_payment_id: string
           p_payment_method?: string
         }
+        Returns: Json
+      }
+      process_referral_bonus: {
+        Args: { p_referee_user_id: string }
         Returns: Json
       }
       set_franchise_payment_settings: {
