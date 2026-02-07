@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Building2, Users, Crown, BarChart3, Activity, Shield } from "lucide-react";
+import { MapPin, Building2, Users, Crown, BarChart3, Activity, Shield, Megaphone } from "lucide-react";
 import { SuperAdminHeader } from "@/components/superadmin/SuperAdminHeader";
 import { StatsCards } from "@/components/superadmin/StatsCards";
 import { CitiesManagement } from "@/components/superadmin/CitiesManagement";
@@ -11,6 +11,7 @@ import { LeadsManagement } from "@/components/superadmin/LeadsManagement";
 import { OverviewCharts } from "@/components/superadmin/OverviewCharts";
 import { RideMonitoring } from "@/components/superadmin/RideMonitoring";
 import { EmergencyAlerts } from "@/components/superadmin/EmergencyAlerts";
+import { GlobalMarketingPanel } from "@/components/superadmin/GlobalMarketingPanel";
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
@@ -90,41 +91,48 @@ export default function SuperAdminDashboard() {
         <StatsCards stats={stats} />
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-4xl grid-cols-7">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
+          <TabsList className="grid w-full max-w-5xl grid-cols-8">
+            <TabsTrigger value="overview" className="flex items-center gap-1 text-xs md:text-sm">
               <BarChart3 className="h-4 w-4" />
-              Visão Geral
+              <span className="hidden md:inline">Visão Geral</span>
+              <span className="md:hidden">Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="monitoring" className="flex items-center gap-2">
+            <TabsTrigger value="monitoring" className="flex items-center gap-1 text-xs md:text-sm">
               <Activity className="h-4 w-4" />
-              Monitoramento
+              <span className="hidden md:inline">Monitoramento</span>
+              <span className="md:hidden">Monitor</span>
             </TabsTrigger>
-            <TabsTrigger value="emergency" className="flex items-center gap-2 relative">
+            <TabsTrigger value="emergency" className="flex items-center gap-1 text-xs md:text-sm relative">
               <Shield className="h-4 w-4" />
-              Emergências
+              <span className="hidden md:inline">Emergências</span>
+              <span className="md:hidden">SOS</span>
               {stats.activeAlerts > 0 && (
-                <span className="ml-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center animate-pulse">
+                <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center animate-pulse">
                   {stats.activeAlerts}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="cities" className="flex items-center gap-2">
+            <TabsTrigger value="cities" className="flex items-center gap-1 text-xs md:text-sm">
               <MapPin className="h-4 w-4" />
               Cidades
             </TabsTrigger>
-            <TabsTrigger value="franchises" className="flex items-center gap-2">
+            <TabsTrigger value="franchises" className="flex items-center gap-1 text-xs md:text-sm">
               <Building2 className="h-4 w-4" />
               Franquias
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" className="flex items-center gap-1 text-xs md:text-sm">
               <Users className="h-4 w-4" />
               Usuários
             </TabsTrigger>
-            <TabsTrigger value="leads" className="flex items-center gap-2">
+            <TabsTrigger value="marketing" className="flex items-center gap-1 text-xs md:text-sm">
+              <Megaphone className="h-4 w-4" />
+              Marketing
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="flex items-center gap-1 text-xs md:text-sm">
               <Crown className="h-4 w-4" />
               Leads
               {stats.pendingLeads > 0 && (
-                <span className="ml-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                <span className="ml-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
                   {stats.pendingLeads}
                 </span>
               )}
@@ -153,6 +161,10 @@ export default function SuperAdminDashboard() {
 
           <TabsContent value="users">
             <UsersManagement />
+          </TabsContent>
+
+          <TabsContent value="marketing">
+            <GlobalMarketingPanel />
           </TabsContent>
 
           <TabsContent value="leads">
