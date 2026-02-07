@@ -3180,6 +3180,21 @@ export type Database = {
           payment_webhook_url: string
         }[]
       }
+      get_ride_driver_info: {
+        Args: { p_ride_id: string }
+        Returns: {
+          current_lat: number
+          current_lng: number
+          driver_avatar: string
+          driver_id: string
+          driver_name: string
+          driver_phone: string
+          rating: number
+          vehicle_color: string
+          vehicle_model: string
+          vehicle_plate: string
+        }[]
+      }
       get_user_franchise_id: { Args: { _user_id: string }; Returns: string }
       grant_franchise_courtesy: {
         Args: { p_days: number; p_franchise_id: string; p_reason?: string }
