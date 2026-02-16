@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ChatSupport } from "@/components/support/ChatSupport";
 import FranchiseLanding from "./pages/FranchiseLanding";
 import CityLanding from "./pages/CityLanding";
+import CityLandingWrapper from "./pages/CityLandingWrapper";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -61,6 +62,7 @@ const App = () => (
           <Routes>
             {/* Se for subdomínio de cidade, mostra landing específica */}
             <Route path="/" element={isSubdomain ? <CityLanding /> : <FranchiseLanding />} />
+            <Route path="/cidade/:subdomain" element={<CityLandingWrapper />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/register" element={<Register />} />

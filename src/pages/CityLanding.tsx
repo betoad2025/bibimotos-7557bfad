@@ -23,10 +23,13 @@ import logoImage from "@/assets/logo-simbolo.png";
 import { useFranchiseBySubdomain } from "@/hooks/useFranchiseBySubdomain";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function CityLanding() {
-  const { franchise, isLoading, error, subdomain } = useFranchiseBySubdomain();
+export default function CityLanding({ subdomainOverride }: { subdomainOverride?: string }) {
+  const { franchise, isLoading, error, subdomain } = useFranchiseBySubdomain(subdomainOverride);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  
+  // Base path para links internos (preserva contexto da cidade)
+  const cityBasePath = subdomain ? `/cidade/${subdomain}` : '';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
