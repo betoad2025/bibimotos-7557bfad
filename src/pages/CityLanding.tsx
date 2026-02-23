@@ -69,12 +69,22 @@ export default function CityLanding({ subdomainOverride }: { subdomainOverride?:
               <p className="text-muted-foreground">
                 O subdomínio <strong>{subdomain}</strong> não está associado a nenhuma cidade ativa.
               </p>
+              {error && (
+                <p className="text-xs text-muted-foreground/60 mt-2">
+                  Detalhe: {error}
+                </p>
+              )}
             </div>
-            <Button asChild className="w-full">
-              <a href="https://bibimotos.com.br">
-                Voltar para o site principal
-              </a>
-            </Button>
+            <div className="space-y-3">
+              <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+                Tentar Novamente
+              </Button>
+              <Button asChild className="w-full">
+                <a href="https://bibimotos.com.br">
+                  Voltar para o site principal
+                </a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
