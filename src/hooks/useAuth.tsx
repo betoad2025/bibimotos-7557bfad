@@ -83,6 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        // Set loading true during auth transitions to prevent premature redirects
+        if (session?.user?.id !== user?.id) {
+          setLoading(true);
+        }
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
