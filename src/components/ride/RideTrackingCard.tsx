@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/profile/UserAvatar';
 import { DriverCard } from './DriverCard';
+import { SOSButton } from './SOSButton';
+import { ShareRideButton } from './ShareRideButton';
+import { CancelRideModal } from './CancelRideModal';
 import { useRideService } from '@/hooks/useRideService';
-import { MapPin, Navigation, Clock, Phone, MessageCircle, X, CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { MapPin, Navigation, Clock, Phone, MessageCircle, X, CheckCircle, Loader2 } from 'lucide-react';
 import type { RideData, DriverInfo, PassengerInfo } from '@/hooks/useRideRealtime';
 
 interface RideTrackingCardProps {
@@ -27,20 +31,19 @@ export function RideTrackingCard({
   onComplete,
   onRate,
 }: RideTrackingCardProps) {
-  const { loading, cancelRide, startRide } = useRideService();
-
-  const handleCancel = async () => {
-    const success = await cancelRide(ride.id);
-    if (success && onCancel) {
-      onCancel();
-    }
-  };
+  const { loading, startRide } = useRideService();
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handleStart = async () => {
     const success = await startRide(ride.id);
     if (success && onStart) {
       onStart();
     }
+  };
+
+  const handleCancelled = () => {
+    setShowCancelModal(false);
+    if (onCancel) onCancel();
   };
 
   const getStatusInfo = () => {
@@ -91,9 +94,15 @@ export function RideTrackingCard({
       {/* Status Card */}
       <Card className={`border-2 ${statusInfo.color}`}>
         <CardHeader className="pb-2">
-          <CardTitle className={`text-lg ${statusInfo.textColor}`}>
-            {statusInfo.title}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className={`text-lg ${statusInfo.textColor}`}>
+              {statusInfo.title}
+            </CardTitle>
+            {/* Share button for passenger when ride is active */}
+            {!isDriver && ride.status !== 'pending' && ride.status !== 'completed' && ride.status !== 'cancelled' && (
+              <ShareRideButton rideId={ride.id} />
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {/* For passenger: Show driver info */}
@@ -207,11 +216,11 @@ export function RideTrackingCard({
       {/* Action Buttons */}
       {ride.status !== 'completed' && ride.status !== 'cancelled' && (
         <div className="flex gap-3">
-          {/* Cancel button - always available before completion */}
+          {/* Cancel button - opens modal with reason */}
           <Button
             variant="outline"
             className="flex-1"
-            onClick={handleCancel}
+            onClick={() => setShowCancelModal(true)}
             disabled={loading}
           >
             <X className="h-4 w-4 mr-2" />
@@ -269,14 +278,23 @@ export function RideTrackingCard({
         </Button>
       )}
 
-      {/* Emergency button */}
-      <Button
-        variant="ghost"
-        className="w-full text-red-500 hover:text-red-600 hover:bg-red-50"
-      >
-        <AlertTriangle className="h-4 w-4 mr-2" />
-        Emergência / Suporte
-      </Button>
+      {/* SOS Button - real functional emergency */}
+      {ride.status !== 'completed' && ride.status !== 'cancelled' && (
+        <SOSButton
+          rideId={ride.id}
+          franchiseId={ride.franchise_id}
+          reporterType={isDriver ? "driver" : "passenger"}
+        />
+      )}
+
+      {/* Cancel Ride Modal with reason */}
+      <CancelRideModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        rideId={ride.id}
+        isDriver={isDriver}
+        onCancelled={handleCancelled}
+      />
     </div>
   );
 }

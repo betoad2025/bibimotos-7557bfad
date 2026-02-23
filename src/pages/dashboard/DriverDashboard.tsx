@@ -10,9 +10,13 @@ import { UserAvatar } from "@/components/profile/UserAvatar";
 import { ReputationBadge } from "@/components/profile/ReputationBadge";
 import { RideRequestCard } from "@/components/ride/RideRequestCard";
 import { RideTrackingCard } from "@/components/ride/RideTrackingCard";
+import { RideMapTracker } from "@/components/ride/RideMapTracker";
 import { EnhancedRatingModal } from "@/components/ride/EnhancedRatingModal";
+import { SOSButton } from "@/components/ride/SOSButton";
+import { DemandBonusCard } from "@/components/driver/DemandBonusCard";
 import { usePendingRides, useRideRealtime } from "@/hooks/useRideRealtime";
 import { useRideService } from "@/hooks/useRideService";
+import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logoImage from "@/assets/logo-simbolo.png";
 import {
   Wallet,
@@ -23,6 +27,7 @@ import {
   LogOut,
   Bike,
   ArrowRightLeft,
+  AlertTriangle,
 } from "lucide-react";
 import { CreditsShop } from "@/components/driver/CreditsShop";
 import { RideHistory } from "@/components/ride/RideHistory";
@@ -58,20 +63,27 @@ export default function DriverDashboard() {
   const { rides: pendingRides } = usePendingRides(driverData?.franchise_id || null, isOnline);
   const { ride, passenger, loading: rideLoading } = useRideRealtime(currentRideId);
 
+  const hasActiveRide = currentRideId && ride && !["completed", "cancelled"].includes(ride.status || "");
+
+  // GPS tracking during active ride
+  useLocationTracking({
+    rideId: currentRideId || "",
+    driverId: driverData?.id || "",
+    isActive: !!hasActiveRide,
+  });
+
   useEffect(() => {
     if (user) {
       fetchDriverData();
     }
   }, [user]);
 
-  // Check for active ride on mount
   useEffect(() => {
     if (driverData?.id) {
       checkActiveRide();
     }
   }, [driverData?.id]);
 
-  // Update driver location when online
   useEffect(() => {
     if (!isOnline || !driverData?.id) return;
 
@@ -90,7 +102,7 @@ export default function DriverDashboard() {
     };
 
     updateLocation();
-    const interval = setInterval(updateLocation, 30000); // Every 30 seconds
+    const interval = setInterval(updateLocation, 30000);
 
     return () => clearInterval(interval);
   }, [isOnline, driverData?.id, updateDriverLocation]);
@@ -182,13 +194,6 @@ export default function DriverDashboard() {
     }
   };
 
-  const handleRideAccepted = () => {
-    // Find the ride that was just accepted
-    if (pendingRides.length > 0) {
-      setCurrentRideId(pendingRides[0].id);
-    }
-  };
-
   const handleCompleteRide = async () => {
     if (!ride) return;
     
@@ -199,7 +204,6 @@ export default function DriverDashboard() {
     
     if (success) {
       setShowRatingModal(true);
-      // Refresh driver data to update credits
       fetchDriverData();
     }
   };
@@ -215,8 +219,6 @@ export default function DriverDashboard() {
   const handleCancelRide = () => {
     setCurrentRideId(null);
   };
-
-  const hasActiveRide = currentRideId && ride && !["completed", "cancelled"].includes(ride.status || "");
 
   if (!driverData) {
     return (
@@ -259,6 +261,47 @@ export default function DriverDashboard() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Low Credits Alert */}
+        {driverData.credits <= 0 && (
+          <Card className="border-2 border-red-500 bg-red-50 dark:bg-red-900/20">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-red-700 dark:text-red-400">Sem créditos!</p>
+                  <p className="text-sm text-red-600 dark:text-red-300">Você não pode ficar online. Recarregue para receber corridas.</p>
+                </div>
+                <Button size="sm" variant="destructive" onClick={() => {
+                  const el = document.getElementById('credits-tab');
+                  if (el) el.click();
+                }}>
+                  Recarregar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {driverData.credits > 0 && driverData.credits < 3 && (
+          <Card className="border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-yellow-700 dark:text-yellow-400">Créditos acabando!</p>
+                  <p className="text-sm text-yellow-600 dark:text-yellow-300">Restam R$ {driverData.credits.toFixed(2)}. Recarregue em breve.</p>
+                </div>
+                <Button size="sm" variant="outline" className="border-yellow-500 text-yellow-700" onClick={() => {
+                  const el = document.getElementById('credits-tab');
+                  if (el) el.click();
+                }}>
+                  Recarregar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Profile Card */}
         <Card className="border-2">
           <CardContent className="pt-6">
@@ -314,17 +357,35 @@ export default function DriverDashboard() {
           </CardContent>
         </Card>
 
-        {/* Active Ride */}
-        {hasActiveRide && (
-          <RideTrackingCard
-            ride={ride}
-            driver={null}
-            passenger={passenger}
-            isDriver={true}
-            onCancel={handleCancelRide}
-            onComplete={handleCompleteRide}
-            onRate={() => setShowRatingModal(true)}
+        {/* Demand Bonus Card - shows when online */}
+        {isOnline && !hasActiveRide && (
+          <DemandBonusCard
+            franchiseId={driverData.franchise_id}
+            driverId={driverData.id}
           />
+        )}
+
+        {/* Active Ride with Map */}
+        {hasActiveRide && (
+          <>
+            <RideMapTracker
+              rideId={ride.id}
+              originLat={Number(ride.origin_lat) || 0}
+              originLng={Number(ride.origin_lng) || 0}
+              destinationLat={Number(ride.destination_lat) || 0}
+              destinationLng={Number(ride.destination_lng) || 0}
+              status={ride.status || "accepted"}
+            />
+            <RideTrackingCard
+              ride={ride}
+              driver={null}
+              passenger={passenger}
+              isDriver={true}
+              onCancel={handleCancelRide}
+              onComplete={handleCompleteRide}
+              onRate={() => setShowRatingModal(true)}
+            />
+          </>
         )}
 
         {/* Pending Ride Requests */}
@@ -378,7 +439,7 @@ export default function DriverDashboard() {
         {!hasActiveRide && (
           <Tabs defaultValue="credits" className="space-y-4">
             <TabsList className="grid grid-cols-4 w-full">
-              <TabsTrigger value="credits">💳 Créditos</TabsTrigger>
+              <TabsTrigger value="credits" id="credits-tab">💳 Créditos</TabsTrigger>
               <TabsTrigger value="report">📊 Relatório</TabsTrigger>
               <TabsTrigger value="history">📜 Histórico</TabsTrigger>
               <TabsTrigger value="transfer">🔄 Transferir</TabsTrigger>
@@ -426,6 +487,16 @@ export default function DriverDashboard() {
           </Tabs>
         )}
       </main>
+
+      {/* Floating SOS Button during active ride */}
+      {hasActiveRide && (
+        <SOSButton
+          rideId={ride.id}
+          franchiseId={driverData.franchise_id}
+          reporterType="driver"
+          variant="floating"
+        />
+      )}
 
       {/* Rating Modal */}
       {showRatingModal && passenger && ride && (
