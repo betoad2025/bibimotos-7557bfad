@@ -27,6 +27,7 @@ import { SettingsPanel } from "@/components/dashboard/SettingsPanel";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { RealtimeNotificationPanel } from "@/components/notifications/RealtimeNotificationPanel";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { DriversMap } from "@/components/franchise/DriversMap";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4))', 'hsl(var(--destructive))', 'hsl(var(--chart-1))'];
 
@@ -548,6 +549,23 @@ export default function FranchiseAdminDashboard() {
 
           {/* RIDES TAB */}
           <TabsContent value="rides" className="space-y-6">
+            {/* Mini-mapa de motoristas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Mapa de Motoristas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DriversMap
+                  drivers={drivers}
+                  cityLat={franchise?.cities?.lat}
+                  cityLng={franchise?.cities?.lng}
+                />
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
