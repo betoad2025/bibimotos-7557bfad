@@ -35,6 +35,93 @@ export default function CompleteRegistration() {
     state: '',
     zipCode: '',
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Input mask helpers
+  const maskCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .slice(0, 11)
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  };
+
+  const maskCNPJ = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .slice(0, 14)
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  };
+
+  const maskPhone = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .slice(0, 11)
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+  };
+
+  const maskCEP = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .slice(0, 8)
+      .replace(/(\d{5})(\d{1,3})$/, '$1-$2');
+  };
+
+  const validateCPF = (cpf: string): boolean => {
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(digits)) return false;
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+    let check = 11 - (sum % 11);
+    if (check >= 10) check = 0;
+    if (parseInt(digits[9]) !== check) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+    check = 11 - (sum % 11);
+    if (check >= 10) check = 0;
+    return parseInt(digits[10]) === check;
+  };
+
+  const validateCNPJ = (cnpj: string): boolean => {
+    const digits = cnpj.replace(/\D/g, '');
+    if (digits.length !== 14) return false;
+    if (/^(\d)\1{13}$/.test(digits)) return false;
+    return true; // Simplified validation
+  };
+
+  const validatePersonalStep = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (formData.personType === 'pf') {
+      if (!formData.cpf || !validateCPF(formData.cpf)) {
+        errors.cpf = 'CPF inválido';
+      }
+      if (!formData.rg || formData.rg.replace(/\D/g, '').length < 5) {
+        errors.rg = 'RG obrigatório';
+      }
+    } else {
+      if (!formData.cnpj || !validateCNPJ(formData.cnpj)) {
+        errors.cnpj = 'CNPJ inválido';
+      }
+    }
+
+    if (!formData.phone || formData.phone.replace(/\D/g, '').length < 10) {
+      errors.phone = 'Telefone inválido';
+    }
+    if (!formData.address) errors.address = 'Endereço obrigatório';
+    if (!formData.city) errors.city = 'Cidade obrigatória';
+    if (!formData.state || formData.state.length !== 2) errors.state = 'UF inválido';
+    if (!formData.zipCode || formData.zipCode.replace(/\D/g, '').length !== 8) errors.zipCode = 'CEP inválido';
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
   
   const [files, setFiles] = useState({
     profilePhoto: null as File | null,
@@ -306,8 +393,10 @@ export default function CompleteRegistration() {
                         <Input
                           placeholder="000.000.000-00"
                           value={formData.cpf}
-                          onChange={(e) => setFormData(prev => ({ ...prev, cpf: e.target.value }))}
+                          onChange={(e) => setFormData(prev => ({ ...prev, cpf: maskCPF(e.target.value) }))}
+                          className={validationErrors.cpf ? 'border-destructive' : ''}
                         />
+                        {validationErrors.cpf && <p className="text-xs text-destructive">{validationErrors.cpf}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label>RG *</Label>
@@ -315,7 +404,9 @@ export default function CompleteRegistration() {
                           placeholder="00.000.000-0"
                           value={formData.rg}
                           onChange={(e) => setFormData(prev => ({ ...prev, rg: e.target.value }))}
+                          className={validationErrors.rg ? 'border-destructive' : ''}
                         />
+                        {validationErrors.rg && <p className="text-xs text-destructive">{validationErrors.rg}</p>}
                       </div>
                     </div>
                   </>
@@ -327,8 +418,10 @@ export default function CompleteRegistration() {
                         <Input
                           placeholder="00.000.000/0000-00"
                           value={formData.cnpj}
-                          onChange={(e) => setFormData(prev => ({ ...prev, cnpj: e.target.value }))}
+                          onChange={(e) => setFormData(prev => ({ ...prev, cnpj: maskCNPJ(e.target.value) }))}
+                          className={validationErrors.cnpj ? 'border-destructive' : ''}
                         />
+                        {validationErrors.cnpj && <p className="text-xs text-destructive">{validationErrors.cnpj}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label>Inscrição Estadual</Label>
@@ -347,8 +440,10 @@ export default function CompleteRegistration() {
                   <Input
                     placeholder="(00) 00000-0000"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: maskPhone(e.target.value) }))}
+                    className={validationErrors.phone ? 'border-destructive' : ''}
                   />
+                  {validationErrors.phone && <p className="text-xs text-destructive">{validationErrors.phone}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -357,7 +452,9 @@ export default function CompleteRegistration() {
                     placeholder="Rua, número, complemento"
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    className={validationErrors.address ? 'border-destructive' : ''}
                   />
+                  {validationErrors.address && <p className="text-xs text-destructive">{validationErrors.address}</p>}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -366,7 +463,9 @@ export default function CompleteRegistration() {
                     <Input
                       value={formData.city}
                       onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                      className={validationErrors.city ? 'border-destructive' : ''}
                     />
+                    {validationErrors.city && <p className="text-xs text-destructive">{validationErrors.city}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label>Estado *</Label>
@@ -375,21 +474,29 @@ export default function CompleteRegistration() {
                       maxLength={2}
                       value={formData.state}
                       onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value.toUpperCase() }))}
+                      className={validationErrors.state ? 'border-destructive' : ''}
                     />
+                    {validationErrors.state && <p className="text-xs text-destructive">{validationErrors.state}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label>CEP *</Label>
                     <Input
                       placeholder="00000-000"
                       value={formData.zipCode}
-                      onChange={(e) => setFormData(prev => ({ ...prev, zipCode: e.target.value }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, zipCode: maskCEP(e.target.value) }))}
+                      className={validationErrors.zipCode ? 'border-destructive' : ''}
                     />
+                    {validationErrors.zipCode && <p className="text-xs text-destructive">{validationErrors.zipCode}</p>}
                   </div>
                 </div>
 
                 <div className="flex gap-4">
                   <Button variant="outline" onClick={() => setStep('photo')}>Voltar</Button>
-                  <Button className="flex-1 bg-purple-600 hover:bg-purple-700" onClick={() => setStep('documents')}>
+                  <Button className="flex-1 bg-purple-600 hover:bg-purple-700" onClick={() => {
+                    if (validatePersonalStep()) {
+                      setStep('documents');
+                    }
+                  }}>
                     Continuar
                   </Button>
                 </div>

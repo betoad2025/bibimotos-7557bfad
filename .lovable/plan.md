@@ -20,9 +20,9 @@
 | 12 | FranchiseAdminDashboard gráficos com dados reais | ✅ |
 | 13 | Rotas /inicio e /franquia adicionadas | ✅ |
 
-### 🔲 PENDENTE
-| # | Item | Detalhes |
+### ✅ CONCLUÍDO (Fase Final)
+| # | Item | Status |
 |---|---|---|
-| 14 | CreditsShop detecção de gateway real vs mock | Verificar franchise.payment_api_key |
-| 15 | MerchantDashboard cálculo de preço real | Usar useRideService.calculatePrice() |
-| 16 | CompleteRegistration validações + máscaras | CPF, CNPJ, telefone, CEP |
+| 14 | CreditsShop detecção de gateway real vs mock | ✅ |
+| 15 | MerchantDashboard cálculo de preço real | ✅ |
+| 16 | CompleteRegistration validações + máscaras | ✅ |
