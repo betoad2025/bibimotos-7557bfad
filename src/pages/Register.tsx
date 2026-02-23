@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Bike, Mail, Lock, User, Phone, ArrowLeft, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -14,10 +14,26 @@ type UserType = "passenger" | "driver" | "merchant";
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
   const { toast } = useToast();
   
-  const [userType, setUserType] = useState<UserType>("passenger");
+  // Read role and city_id from URL params
+  const roleFromUrl = searchParams.get('role') as UserType | null;
+  const cityIdFromUrl = searchParams.get('city_id');
+  
+  const [userType, setUserType] = useState<UserType>(
+    roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl) 
+      ? roleFromUrl 
+      : "passenger"
+  );
+
+  // Sync with URL param changes
+  useEffect(() => {
+    if (roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl)) {
+      setUserType(roleFromUrl);
+    }
+  }, [roleFromUrl]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -59,7 +75,11 @@ const Register = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(formData.email, formData.password, formData.name);
+    const { error } = await signUp(formData.email, formData.password, formData.name, {
+      user_type: userType,
+      city_id: cityIdFromUrl || undefined,
+      phone: formData.phone || undefined,
+    });
 
     if (!error) {
       toast({

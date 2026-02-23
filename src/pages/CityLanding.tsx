@@ -285,7 +285,7 @@ export default function CityLanding({ subdomainOverride }: { subdomainOverride?:
                 className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-black font-bold text-lg px-8 h-14 shadow-2xl shadow-amber-500/30 hover:shadow-amber-500/50 transition-all hover:scale-105 group"
                 asChild
               >
-                <Link to="/register">
+                <Link to={`/register?role=passenger&city_id=${franchise.city.id}`}>
                   <Bike className="mr-2 h-5 w-5" />
                   Pedir Mototáxi
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -297,7 +297,7 @@ export default function CityLanding({ subdomainOverride }: { subdomainOverride?:
                 className="border-2 border-white/30 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white font-semibold text-lg px-8 h-14"
                 asChild
               >
-                <Link to="/register?role=driver">
+                <Link to={`/register?role=driver&city_id=${franchise.city.id}`}>
                   <Users className="mr-2 h-5 w-5" />
                   Seja Motoboy
                 </Link>
@@ -384,7 +384,7 @@ export default function CityLanding({ subdomainOverride }: { subdomainOverride?:
                 className="bg-white text-primary hover:bg-white/90 font-bold text-lg px-8 h-14 shadow-2xl"
                 asChild
               >
-                <Link to="/register">
+                <Link to={`/register?role=passenger&city_id=${franchise.city.id}`}>
                   <Bike className="mr-2 h-5 w-5" />
                   Criar Conta Grátis
                 </Link>

@@ -12,7 +12,7 @@ interface AuthContextType {
   roles: AppRole[];
   profile: any | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, metadata?: { user_type?: string; city_id?: string; phone?: string }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   refreshProfile: () => Promise<void>;
@@ -43,19 +43,111 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log('[Auth] Fetched roles:', rolesResult.data, 'error:', rolesResult.error);
       console.log('[Auth] Fetched profile:', profileResult.data ? 'found' : 'not found', 'error:', profileResult.error);
-      
-      if (rolesResult.data) {
-        setRoles(rolesResult.data.map(r => r.role as AppRole));
-      } else {
-        setRoles([]);
-      }
-      if (profileResult.data) {
+
+      // Get user metadata for auto-provisioning
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userMeta = authUser?.user_metadata;
+
+      // Auto-create profile if missing
+      if (!profileResult.data && authUser) {
+        console.log('[Auth] Auto-creating profile for new user');
+        const { data: newProfile } = await supabase.from('profiles').insert({
+          user_id: userId,
+          full_name: userMeta?.full_name || authUser.email || '',
+          email: authUser.email || '',
+          phone: userMeta?.phone || null,
+        }).select().maybeSingle();
+        
+        if (newProfile) {
+          setProfile(newProfile);
+        }
+      } else if (profileResult.data) {
         setProfile(profileResult.data);
       } else {
         setProfile(null);
       }
+
+      // Auto-create role and entity record if missing
+      if (rolesResult.data && rolesResult.data.length > 0) {
+        setRoles(rolesResult.data.map(r => r.role as AppRole));
+      } else if (userMeta?.user_type) {
+        console.log('[Auth] Auto-creating role:', userMeta.user_type);
+        const roleMap: Record<string, AppRole> = {
+          passenger: 'passenger',
+          driver: 'driver',
+          merchant: 'merchant',
+        };
+        const role = roleMap[userMeta.user_type];
+        if (role) {
+          await supabase.from('user_roles').insert({ user_id: userId, role }).select();
+          setRoles([role]);
+
+          // Auto-create entity record linked to franchise/city
+          await autoCreateEntityRecord(userId, userMeta.user_type, userMeta.city_id);
+        }
+      } else {
+        setRoles([]);
+      }
     } catch (error) {
       console.error('[Auth] Error fetching user data:', error);
+    }
+  }, []);
+
+  const autoCreateEntityRecord = useCallback(async (userId: string, userType: string, cityId?: string) => {
+    try {
+      // Find franchise for this city (or first active franchise)
+      let franchiseId: string | null = null;
+      
+      if (cityId) {
+        const { data: franchise } = await supabase
+          .from('franchises')
+          .select('id')
+          .eq('city_id', cityId)
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        franchiseId = franchise?.id || null;
+      }
+      
+      if (!franchiseId) {
+        const { data: franchise } = await supabase
+          .from('franchises')
+          .select('id')
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        franchiseId = franchise?.id || null;
+      }
+
+      if (!franchiseId) {
+        console.warn('[Auth] No active franchise found for entity creation');
+        return;
+      }
+
+      if (userType === 'passenger') {
+        await supabase.from('passengers').insert({
+          user_id: userId,
+          franchise_id: franchiseId,
+        }).select();
+      } else if (userType === 'driver') {
+        await supabase.from('drivers').insert({
+          user_id: userId,
+          franchise_id: franchiseId,
+          is_approved: false,
+        }).select();
+      } else if (userType === 'merchant') {
+        await supabase.from('merchants').insert({
+          user_id: userId,
+          franchise_id: franchiseId,
+          is_approved: false,
+          business_name: 'Meu Negócio',
+          business_address: '',
+        } as any).select();
+      }
+      
+      console.log('[Auth] Auto-created', userType, 'record for franchise', franchiseId);
+    } catch (error) {
+      console.error('[Auth] Error auto-creating entity record:', error);
     }
   }, []);
 
@@ -156,11 +248,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   }, [toast]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+  const signUp = useCallback(async (
+    email: string, 
+    password: string, 
+    fullName: string,
+    metadata?: { user_type?: string; city_id?: string; phone?: string }
+  ) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { 
+        data: { 
+          full_name: fullName,
+          ...(metadata?.user_type && { user_type: metadata.user_type }),
+          ...(metadata?.city_id && { city_id: metadata.city_id }),
+          ...(metadata?.phone && { phone: metadata.phone }),
+        } 
+      },
     });
     if (error) {
       toast({
