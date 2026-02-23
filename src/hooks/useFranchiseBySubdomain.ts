@@ -59,6 +59,8 @@ export function useFranchiseBySubdomain(subdomainParam?: string): SubdomainInfo 
       }
 
       try {
+        console.log('[CityLanding] Buscando cidade para subdomínio:', subdomain);
+        
         // Busca a cidade pelo subdomínio
         const { data: cityData, error: cityError } = await supabase
           .from('cities')
@@ -67,11 +69,21 @@ export function useFranchiseBySubdomain(subdomainParam?: string): SubdomainInfo 
           .eq('is_active', true)
           .single();
 
-        if (cityError || !cityData) {
+        if (cityError) {
+          console.error('[CityLanding] Erro ao buscar cidade:', cityError.message, cityError.code, cityError.details);
           setError(`Cidade não encontrada para o subdomínio: ${subdomain}`);
           setIsLoading(false);
           return;
         }
+        
+        if (!cityData) {
+          console.error('[CityLanding] Nenhuma cidade retornada para:', subdomain);
+          setError(`Cidade não encontrada para o subdomínio: ${subdomain}`);
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('[CityLanding] Cidade encontrada:', cityData.name, '- Buscando franquia...');
 
         // Busca a franquia vinculada à cidade
         const { data: franchiseData, error: franchiseError } = await supabase
@@ -81,11 +93,21 @@ export function useFranchiseBySubdomain(subdomainParam?: string): SubdomainInfo 
           .eq('is_active', true)
           .single();
 
-        if (franchiseError || !franchiseData) {
+        if (franchiseError) {
+          console.error('[CityLanding] Erro ao buscar franquia:', franchiseError.message, franchiseError.code, franchiseError.details);
           setError(`Franquia não encontrada para a cidade: ${cityData.name}`);
           setIsLoading(false);
           return;
         }
+
+        if (!franchiseData) {
+          console.error('[CityLanding] Nenhuma franquia retornada para cidade:', cityData.name);
+          setError(`Franquia não encontrada para a cidade: ${cityData.name}`);
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('[CityLanding] Franquia encontrada:', franchiseData.name);
 
         setFranchise({
           ...franchiseData,
