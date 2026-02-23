@@ -1,102 +1,196 @@
 
-# Checkup Geral da Plataforma + Pagamento Asaas
 
-## Situacao Atual - O Que JA Funciona
+# Auditoria 360 -- Checkup Completo Para Producao
 
-| Area | Status | Detalhes |
+## Resultado da Analise por Stakeholder
+
+### PASSAGEIRO
+| Funcionalidade | Status | Problema |
 |---|---|---|
-| Registro com role e city_id | OK | `Register.tsx` le URL params, `useAuth.tsx` auto-cria profile/role/entity |
-| CTAs das landings | OK | Hero, Franchise, CityLanding linkam corretamente para `/register?role=` |
-| Dashboard Franqueado multi-cidade | OK | Seletor de cidades, graficos com dados reais |
-| Dashboard Passageiro estado vazio | OK | Tela de boas-vindas quando nao ha registro |
-| Dashboard Motorista estado vazio | OK | Tela de boas-vindas quando nao ha registro |
-| CreditsShop detecta gateway | OK | Le `payment_gateway` + `payment_api_key` da franquia |
-| Edge Function `generate-pix` | OK | Suporta Asaas + Woovi/OpenPix para gerar PIX e checar status |
-| MerchantDashboard preco dinamico | OK | Usa `base_price` + `price_per_km` da franquia |
-| CompleteRegistration validacoes | OK | Mascaras CPF/CNPJ/telefone/CEP + validacao de digitos |
-| Storage bucket `documents` | OK | Criado com RLS para KYC |
-| SettingsPanel (Integracoes) | OK | Franqueado salva chaves de API (Asaas, Woovi, etc.) na tabela `franchise_api_keys` |
-| Super Admin - Cidades (Operacional) | OK | Configura gateway, chave API, precos na tabela `franchises` |
+| Registro com role automatica | OK | Funciona via URL `?role=passenger` |
+| Solicitar corrida (formulario) | OK | Autocomplete + calculo de preco |
+| Acompanhar corrida em tempo real | PARCIAL | **RideMapTracker existe mas NAO esta integrado** - passageiro ve status textual mas NAO ve mapa |
+| Compartilhar viagem com familiar | AUSENTE | **ShareRideButton existe mas NAO esta integrado** em nenhum dashboard |
+| Botao SOS / Emergencia | AUSENTE | **SOSButton existe mas NAO esta integrado** - botao "Emergencia/Suporte" no RideTrackingCard nao faz nada (sem onClick) |
+| Cancelar corrida | OK | CancelRideModal funciona via useRideService |
+| Avaliar motorista | OK | EnhancedRatingModal com estrelas |
+| Historico de corridas | OK | RideHistory integrado |
+| Carteira digital | OK | UserWalletCard integrado |
+| Locais favoritos | OK | FavoriteAddresses integrado |
+| Programa de fidelidade | OK | LoyaltyProgressCard integrado |
 
-## Problemas Encontrados
+### MOTORISTA (MOTOBOY)
+| Funcionalidade | Status | Problema |
+|---|---|---|
+| Ficar online/offline | OK | Toggle com validacao de creditos |
+| Receber corridas em tempo real | OK | usePendingRides com Realtime |
+| Aceitar corrida | OK | accept_ride RPC atomico |
+| Tracking GPS durante corrida | AUSENTE | **useLocationTracking existe mas NAO esta integrado** - driver nao envia GPS durante corrida |
+| Mapa com rota | AUSENTE | **RideMapTracker NAO integrado** |
+| SOS durante corrida | AUSENTE | **SOSButton NAO integrado** |
+| Compartilhar corrida | AUSENTE | **ShareRideButton NAO integrado** |
+| Aviso de creditos baixos | AUSENTE | **Nenhum alerta quando creditos estao acabando** - motorista so descobre quando tenta ficar online com 0 creditos |
+| Bonus por demanda (horario pico) | AUSENTE | **DemandBonusCard existe mas NAO integrado** |
+| Gorjeta | AUSENTE | **TipModal existe mas NAO integrado** |
+| Comprar creditos (CreditsShop) | OK | PIX real (Asaas/Woovi) + fallback mock |
+| Relatorio financeiro | OK | FinancialReportCard + PDF |
+| Historico de corridas | OK | RideHistory integrado |
 
-### 1. CRITICO: Duas tabelas diferentes para chaves de pagamento
-O `SettingsPanel.tsx` (aba Integracoes do Franqueado) salva chaves na tabela `franchise_api_keys`.
-Porem, a `CreditsShop.tsx` e a edge function `generate-pix` leem de `franchises.payment_api_key`.
-Resultado: o franqueado configura a chave pelo painel, mas o sistema nao a encontra na hora de gerar PIX.
+### LOJISTA (MERCHANT)
+| Funcionalidade | Status | Problema |
+|---|---|---|
+| Solicitar entrega | OK | Formulario com calculo dinamico |
+| Acompanhar entrega | PARCIAL | Ve status na lista mas **sem mapa e sem tracking GPS** |
+| Historico de entregas | OK | Lista com filtro |
+| SOS | AUSENTE | Nenhum botao SOS |
+| Pagamento in-app | AUSENTE | **InAppPayment existe mas NAO integrado** |
 
-**Solucao**: Ao salvar uma chave Asaas/Woovi no `SettingsPanel`, tambem atualizar `franchises.payment_gateway` e `franchises.payment_api_key` usando a funcao RPC `set_franchise_payment_settings` que ja existe.
+### DONO DE FRANQUIA
+| Funcionalidade | Status | Problema |
+|---|---|---|
+| Dashboard multi-cidade | OK | Seletor de franquias |
+| Graficos reais (semana/hora/tipo) | OK | Dados do banco |
+| Aprovar motoristas | OK | Botao de aprovacao |
+| Aba Corridas em tempo real | OK | Com filtro por status + Realtime |
+| Historico transacoes credito | OK | Tabela na aba Creditos |
+| Notificacoes em tempo real | OK | RealtimeNotificationPanel |
+| Marketing | OK | MarketingPanel |
+| Configurar chave Asaas/Woovi | OK | SettingsPanel com sync via RPC |
+| Monitorar corrida no mapa | AUSENTE | **Franqueado nao tem mapa** - ve tabela textual mas nao ve posicao dos motoristas |
 
-### 2. CRITICO: Asaas exige `customer` obrigatorio na API
-A API do Asaas requer um campo `customer` (ID do cliente Asaas) em toda cobranca. A edge function `generate-pix` envia o pagamento sem `customer`, o que faz a API retornar erro.
+### SUPER ADMIN (DONO DA PLATAFORMA)
+| Funcionalidade | Status | Problema |
+|---|---|---|
+| Visao geral com stats | OK | StatsCards + OverviewCharts |
+| Monitoramento de corridas | OK | RideMonitoring com detalhes |
+| Alertas de emergencia | OK | EmergencyAlerts |
+| Gestao de cidades | OK | CRUD completo |
+| Gestao de franquias | OK | CRUD completo |
+| Gestao de usuarios | OK | Listagem com roles |
+| Billing franquias | OK | FranchiseBillingManagement |
+| Precificacao | OK | FranchisePricingConfig |
+| Transferencias | OK | FranchiseTransferManagement |
+| Leads | OK | LeadsManagement |
+| Marketing global | OK | GlobalMarketingPanel |
 
-**Solucao**: Criar/buscar o customer no Asaas automaticamente (usando CPF do motorista) antes de gerar a cobranca.
+### SEGURANCA
+| Item | Status | Detalhe |
+|---|---|---|
+| RLS em todas as tabelas | OK | 100% das tabelas com RLS |
+| Isolamento por franchise_id | OK | Verificado via `verify_franchise_isolation` |
+| Protecao PII (CPF/RG) | OK | RLS restritivo em profiles/drivers |
+| Chaves API criptografadas | OK | Armazenadas via franchise_api_keys |
+| Rate limiting | OK | check_rate_limit function |
+| Audit log | OK | security_audit_log |
+| Mascaramento LGPD (90 dias) | OK | mask_old_ride_data trigger |
+| SECURITY DEFINER view | AVISO | `franchises_public` view -- intencional para landing pages anonimas |
+| Leaked password protection | AVISO | Desabilitado -- deve ser ativado |
+| Confirmacao mock sem gateway | OK | Botao "Ja paguei" desabilitado em modo demo |
+| Fraude de creditos | OK | Credits so adicionados apos validacao do gateway |
 
-### 3. QR Code nao renderiza imagem
-O modal de pagamento mostra apenas um icone generico de QR Code. Quando o gateway real retorna `qr_code_image` (base64), ele nao e exibido.
+---
 
-**Solucao**: Renderizar a imagem base64 retornada pelo gateway no lugar do icone placeholder.
+## Problemas Criticos a Resolver (11 itens)
 
-### 4. Confirmacao mock quando gateway falha
-Se o gateway real falhar, o sistema gera PIX mock mas o botao "Ja paguei" confirma imediatamente (sem checagem real). Isso permite creditos fraudulentos.
+### 1. Componentes existentes NAO integrados (mais grave)
+Existem 6 componentes prontos que nunca foram colocados nos dashboards:
+- `SOSButton` -- botao de emergencia para passageiro/motorista/lojista
+- `ShareRideButton` -- compartilhar corrida com familiar
+- `RideMapTracker` -- mapa com tracking em tempo real
+- `useLocationTracking` -- GPS do motorista durante corrida
+- `DemandBonusCard` -- bonus por horario de pico
+- `TipModal` -- gorjeta para motorista
+- `InAppPayment` -- pagamento in-app
+- `CancelRideModal` -- modal de cancelamento com motivo
 
-**Solucao**: Quando usar PIX mock (sem gateway), bloquear o botao "Ja paguei" e exibir aviso claro de que e modo demonstracao. Somente confirmar automaticamente em ambiente de teste.
+### 2. Botao "Emergencia/Suporte" no RideTrackingCard nao faz nada
+Linha 273-278 de RideTrackingCard.tsx: o botao existe mas nao tem `onClick` funcional.
 
-### 5. Falta aba de Corridas Ativas no dashboard do Franqueado
-O franqueado nao tem onde acompanhar corridas em andamento em tempo real (inspiracao Uber/99). So o Super Admin tem `RideMonitoring`.
+### 3. Motorista NAO envia GPS durante corrida
+`useLocationTracking` existe mas nao e chamado no DriverDashboard. O passageiro nao recebe posicao do motorista em tempo real.
 
-**Solucao**: Adicionar aba "Corridas" no `FranchiseAdminDashboard` com listagem de corridas ativas, aceitas, em andamento, filtradas por `franchise_id`.
+### 4. Passageiro/Motorista NAO veem mapa durante corrida
+`RideMapTracker` existe com OpenStreetMap embed e calculo de ETA, mas nao e renderizado em nenhum dashboard.
 
-### 6. Falta historico de transacoes de credito para o Franqueado
-O franqueado nao ve as compras de credito dos seus motoristas.
+### 5. Sem aviso de creditos baixos
+Quando creditos do motorista estao acabando (ex: < 3), nao ha alerta visual. Ele so descobre quando tenta ficar online com 0.
 
-**Solucao**: Adicionar sub-aba na aba "Creditos" mostrando `credit_transactions` filtrado por `franchise_id`.
+### 6. Leaked password protection desabilitado
+Supabase linter reporta que protecao contra senhas vazadas esta desativada.
+
+### 7. Botao cancelar corrida nao pede motivo
+`CancelRideModal` existe com campo de motivo mas nao e usado. O cancelamento atual e direto sem justificativa.
+
+### 8. Gorjeta indisponivel
+`TipModal` existe mas nunca e mostrado apos corrida finalizada.
+
+### 9. DemandBonusCard nao aparece para motorista
+Bonus por demanda/horario de pico existe mas nao e visivel.
+
+### 10. Franqueado sem mapa de monitoramento
+Dashboard do franqueado mostra corridas em tabela mas sem visualizacao no mapa.
+
+### 11. InAppPayment nao integrado
+Passageiro nao tem opcao de pagar via app (carteira/PIX).
 
 ---
 
 ## Plano de Implementacao
 
-### Fase 1: Sincronizar chaves de pagamento (SettingsPanel -> franchises)
+### Fase 1: Integrar componentes de seguranca nas corridas
 
-**Arquivo**: `src/components/dashboard/SettingsPanel.tsx`
-- Na funcao `handleSaveKey`, quando `serviceName === 'asaas'` ou `serviceName === 'woovi'`, apos salvar na `franchise_api_keys`, tambem chamar `supabase.rpc('set_franchise_payment_settings')` para atualizar `franchises.payment_gateway` e `franchises.payment_api_key`.
-- Isso garante que a `CreditsShop` e a edge function encontrem a chave no lugar certo.
+**PassengerDashboard.tsx**:
+- Importar e renderizar `SOSButton` (variant="floating") quando ha corrida ativa
+- Importar e renderizar `ShareRideButton` dentro do `RideTrackingCard` (quando status !== 'pending')
+- Importar e renderizar `RideMapTracker` acima do RideTrackingCard quando corrida ativa
 
-### Fase 2: Corrigir edge function `generate-pix` para Asaas
+**DriverDashboard.tsx**:
+- Importar e chamar `useLocationTracking` quando ha corrida ativa (`isActive = hasActiveRide`)
+- Importar e renderizar `SOSButton` (variant="floating") quando ha corrida ativa
+- Importar e renderizar `RideMapTracker` acima do RideTrackingCard quando corrida ativa
 
-**Arquivo**: `supabase/functions/generate-pix/index.ts`
-- Antes de criar a cobranca Asaas, buscar ou criar um `customer` usando o CPF/nome do motorista.
-- Fluxo: buscar `credit_transactions.driver_id` -> buscar `drivers.user_id` -> buscar `profiles.cpf` e `profiles.full_name` -> `POST /customers` no Asaas (ou buscar existente por `cpfCnpj`).
-- Incluir `customer` no payload de criacao do pagamento.
-- Corrigir CORS headers para incluir headers adicionais necessarios.
+**RideTrackingCard.tsx**:
+- Substituir botao "Emergencia/Suporte" morto pelo `SOSButton` real
+- Adicionar `ShareRideButton` ao lado do botao de cancelar (so para passageiro)
 
-### Fase 3: Renderizar QR Code real no modal de pagamento
+### Fase 2: Alerta de creditos baixos para motorista
 
-**Arquivo**: `src/components/driver/CreditsShop.tsx`
-- Armazenar `qrCodeImage` retornado pelo gateway em novo estado.
-- No modal, se `qrCodeImage` existir, renderizar `<img src="data:image/png;base64,{qrCodeImage}" />` em vez do icone placeholder.
-- Manter o icone como fallback para modo mock.
+**DriverDashboard.tsx**:
+- Quando `driverData.credits < 3` e `driverData.credits > 0`, exibir card de aviso amarelo: "Seus creditos estao acabando! Recarregue para continuar recebendo corridas."
+- Quando `driverData.credits <= 0`, exibir card de aviso vermelho: "Sem creditos! Voce nao pode ficar online."
+- Ambos com botao "Recarregar" que scrolls para aba de creditos
 
-### Fase 4: Bloquear confirmacao manual em modo mock
+### Fase 3: Integrar bonus por demanda e gorjeta
 
-**Arquivo**: `src/components/driver/CreditsShop.tsx`
-- Quando `hasGateway === false`, desabilitar o botao "Ja paguei" e mostrar badge de "Modo Demonstracao".
-- Quando `hasGateway === true`, manter o fluxo normal de verificacao via gateway.
+**DriverDashboard.tsx**:
+- Adicionar `DemandBonusCard` na area principal (acima do grid de stats) quando motorista esta online
+- Mostra multiplicador de bonus baseado na hora atual e demanda
 
-### Fase 5: Aba de Corridas Ativas para Franqueado
+**PassengerDashboard.tsx** e **DriverDashboard.tsx**:
+- Apos `EnhancedRatingModal`, mostrar `TipModal` (so para passageiro avaliando motorista)
+- TipModal permite enviar gorjeta opcional via carteira
 
-**Arquivo**: `src/pages/dashboard/FranchiseAdminDashboard.tsx`
-- Adicionar nova aba "Corridas" ao `TabsList`.
-- Criar componente inline ou separado que lista corridas da franquia com status (pending, accepted, in_progress, completed, cancelled).
-- Incluir filtros por status e busca por motorista/passageiro.
-- Usar realtime subscription para atualizar corridas ao vivo.
+### Fase 4: Modal de cancelamento com motivo
 
-### Fase 6: Historico de transacoes de credito para Franqueado
+**RideTrackingCard.tsx**:
+- Substituir chamada direta `cancelRide(ride.id)` por abertura do `CancelRideModal`
+- CancelRideModal coleta motivo obrigatorio e passa para `cancelRide(ride.id, reason)`
 
-**Arquivo**: `src/pages/dashboard/FranchiseAdminDashboard.tsx` (dentro da aba Creditos)
-- Buscar `credit_transactions` filtrado por `franchise_id`.
-- Exibir tabela com: motorista, valor, tipo (compra/debito), status do pagamento, data.
-- Calcular totais de creditos vendidos e receita.
+### Fase 5: Pagamento in-app para passageiro
+
+**PassengerDashboard.tsx**:
+- Apos corrida finalizada (antes da avaliacao), mostrar opcao de pagamento via `InAppPayment`
+- Suportar pagamento via carteira, PIX, ou dinheiro
+
+### Fase 6: Seguranca - Ativar protecao de senhas vazadas
+
+- Habilitar `leaked password protection` via configuracao de auth (se disponivel)
+
+### Fase 7: Mapa de monitoramento para Franqueado (opcional)
+
+**FranchiseAdminDashboard.tsx** (aba Corridas):
+- Adicionar mini-mapa OpenStreetMap mostrando posicoes dos motoristas online
+- Usar dados de `drivers.current_lat/current_lng` ja existentes
 
 ---
 
@@ -104,13 +198,18 @@ O franqueado nao ve as compras de credito dos seus motoristas.
 
 | Arquivo | Alteracao |
 |---|---|
-| `src/components/dashboard/SettingsPanel.tsx` | Sincronizar chave Asaas/Woovi com `franchises` via RPC |
-| `supabase/functions/generate-pix/index.ts` | Criar customer Asaas antes de gerar cobranca, corrigir CORS |
-| `src/components/driver/CreditsShop.tsx` | Renderizar QR code real, bloquear confirmacao em modo mock, guardar qrCodeImage |
-| `src/pages/dashboard/FranchiseAdminDashboard.tsx` | Nova aba Corridas + historico de transacoes na aba Creditos |
+| `src/pages/dashboard/PassengerDashboard.tsx` | +SOSButton, +ShareRideButton, +RideMapTracker, +TipModal, +InAppPayment |
+| `src/pages/dashboard/DriverDashboard.tsx` | +useLocationTracking, +SOSButton, +RideMapTracker, +DemandBonusCard, +alerta creditos baixos |
+| `src/components/ride/RideTrackingCard.tsx` | Substituir botao morto por SOSButton real, +ShareRideButton, +CancelRideModal |
+| `src/pages/dashboard/MerchantDashboard.tsx` | +SOSButton para entregas ativas |
+| `src/pages/dashboard/FranchiseAdminDashboard.tsx` | Mini-mapa de motoristas (opcional) |
 
 ## Sequencia de Execucao
-1. SettingsPanel - sincronizacao de chaves
-2. Edge function generate-pix - fix Asaas customer + CORS
-3. CreditsShop - QR code real + bloqueio mock
-4. FranchiseAdminDashboard - aba Corridas + historico creditos
+1. RideTrackingCard -- SOSButton real + CancelRideModal + ShareRideButton
+2. PassengerDashboard -- RideMapTracker + SOSButton floating
+3. DriverDashboard -- useLocationTracking + RideMapTracker + SOSButton floating + alerta creditos baixos
+4. DriverDashboard -- DemandBonusCard
+5. PassengerDashboard -- TipModal apos avaliacao
+6. MerchantDashboard -- SOSButton
+7. Seguranca -- leaked password protection
+
