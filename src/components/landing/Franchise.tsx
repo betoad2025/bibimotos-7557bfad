@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Building2, TrendingUp, Users, Headphones, ArrowRight } from "lucide-react";
+import franchiseHero from "@/assets/franchise-hero.jpg";
 
 export const Franchise = () => {
   const benefits = [
@@ -61,32 +62,29 @@ export const Franchise = () => {
             </Button>
           </div>
 
-          {/* Visual */}
+          {/* Cinematic Image */}
           <div className="relative">
-            <div className="glass-card p-8 rounded-3xl">
-              <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-primary flex items-center justify-center glow-primary">
-                    <Building2 className="h-12 w-12 text-primary-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">50+ Cidades</h3>
-                  <p className="text-muted-foreground">Em todo o Brasil</p>
-                </div>
-              </div>
+            <div className="rounded-3xl overflow-hidden shadow-2xl">
+              <img
+                src={franchiseHero}
+                alt="Franqueado Bibi Motos"
+                className="w-full h-[500px] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent rounded-3xl" />
+            </div>
 
-              {/* Floating stats */}
-              <div className="absolute -top-4 -right-4 glass-card px-4 py-3 rounded-xl animate-float">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-success" />
-                  <span className="text-sm font-semibold">ROI de 200%</span>
-                </div>
+            {/* Floating stats */}
+            <div className="absolute -top-4 -right-4 bg-card/90 backdrop-blur-xl border border-border px-4 py-3 rounded-xl shadow-lg animate-float">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-accent" />
+                <span className="text-sm font-semibold">ROI de 200%</span>
               </div>
+            </div>
 
-              <div className="absolute -bottom-4 -left-4 glass-card px-4 py-3 rounded-xl animate-float" style={{ animationDelay: "2s" }}>
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-accent" />
-                  <span className="text-sm font-semibold">+1000 motoristas</span>
-                </div>
+            <div className="absolute -bottom-4 -left-4 bg-card/90 backdrop-blur-xl border border-border px-4 py-3 rounded-xl shadow-lg animate-float" style={{ animationDelay: "2s" }}>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold">+1000 motoristas</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,7 @@
 import { Bike, Package, Pill, Clock, Shield, MapPin } from "lucide-react";
+import heroPassenger from "@/assets/hero-passenger.jpg";
+import serviceDelivery from "@/assets/service-delivery.jpg";
+import servicePharmacy from "@/assets/service-pharmacy.jpg";
 
 export const Services = () => {
   return (
@@ -18,19 +21,22 @@ export const Services = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <ServiceCard
-            icon={<Bike className="h-8 w-8" />}
+            image={heroPassenger}
+            icon={<Bike className="h-6 w-6" />}
             title="Corridas de Moto"
             description="Transporte rápido e eficiente de passageiros. Chegue ao seu destino com segurança e agilidade."
             features={["Motoristas verificados", "Preço justo", "Rastreamento em tempo real"]}
           />
           <ServiceCard
-            icon={<Package className="h-8 w-8" />}
+            image={serviceDelivery}
+            icon={<Package className="h-6 w-6" />}
             title="Entregas Expressas"
             description="Delivery de pacotes e documentos com rapidez. Ideal para e-commerces e empresas."
             features={["Entrega no mesmo dia", "Seguro incluso", "Prova de entrega"]}
           />
           <ServiceCard
-            icon={<Pill className="h-8 w-8" />}
+            image={servicePharmacy}
+            icon={<Pill className="h-6 w-6" />}
             title="Entregas de Farmácia"
             description="Serviço especializado para farmácias e drogarias com máxima segurança."
             features={["Temperatura controlada", "Urgência médica", "24 horas"]}
@@ -50,27 +56,39 @@ export const Services = () => {
 };
 
 interface ServiceCardProps {
+  image: string;
   icon: React.ReactNode;
   title: string;
   description: string;
   features: string[];
 }
 
-const ServiceCard = ({ icon, title, description, features }: ServiceCardProps) => (
-  <div className="glass-card p-8 rounded-2xl hover:border-primary/50 transition-all duration-300 group">
-    <div className="w-16 h-16 mb-6 rounded-2xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-primary-foreground glow-primary">
-      {icon}
+const ServiceCard = ({ image, icon, title, description, features }: ServiceCardProps) => (
+  <div className="rounded-2xl overflow-hidden border border-border bg-card hover:shadow-xl transition-all duration-300 group">
+    {/* Cinematic Image */}
+    <div className="relative h-48 overflow-hidden">
+      <img
+        src={image}
+        alt={title}
+        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+      <div className="absolute bottom-3 left-3 w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
+        {icon}
+      </div>
     </div>
-    <h3 className="text-xl font-bold mb-3 text-foreground">{title}</h3>
-    <p className="text-muted-foreground mb-6">{description}</p>
-    <ul className="space-y-2">
-      {features.map((feature, index) => (
-        <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-          {feature}
-        </li>
-      ))}
-    </ul>
+    <div className="p-6">
+      <h3 className="text-xl font-bold mb-3 text-foreground">{title}</h3>
+      <p className="text-muted-foreground mb-4">{description}</p>
+      <ul className="space-y-2">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </div>
   </div>
 );
 

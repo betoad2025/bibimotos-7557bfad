@@ -1,4 +1,5 @@
 import { MapPin, Search, Bike, Star } from "lucide-react";
+import howItWorksImg from "@/assets/how-it-works.jpg";
 
 export const HowItWorks = () => {
   const steps = [
@@ -30,10 +31,6 @@ export const HowItWorks = () => {
 
   return (
     <section id="como-funciona" className="py-24 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
-
       <div className="container px-4 relative z-10">
         <div className="text-center mb-16">
           <span className="inline-block px-4 py-1 rounded-full bg-accent/20 text-accent text-sm font-medium mb-4">
@@ -47,29 +44,42 @@ export const HowItWorks = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map((item, index) => (
-            <div key={index} className="relative">
-              {/* Connector line */}
-              {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-primary/50 to-transparent -translate-x-4" />
-              )}
-
-              <div className="glass-card p-6 rounded-2xl h-full relative group hover:border-primary/50 transition-all duration-300">
-                {/* Step number */}
-                <div className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold glow-primary">
-                  {item.step}
-                </div>
-
-                <div className="w-14 h-14 mb-4 rounded-xl bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
-                  {item.icon}
-                </div>
-
-                <h3 className="text-lg font-semibold mb-2 text-foreground">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-              </div>
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Cinematic Image */}
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl hidden lg:block">
+            <img
+              src={howItWorksImg}
+              alt="App Bibi Motos em uso"
+              className="w-full h-[500px] object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6">
+              <p className="text-white text-lg font-semibold drop-shadow-lg">
+                Solicite sua corrida em segundos
+              </p>
             </div>
-          ))}
+          </div>
+
+          {/* Steps */}
+          <div className="space-y-6">
+            {steps.map((item, index) => (
+              <div key={index} className="flex gap-4 group">
+                <div className="flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                    {item.icon}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className="w-0.5 h-8 bg-gradient-to-b from-primary/50 to-transparent mt-2" />
+                  )}
+                </div>
+                <div className="pt-2">
+                  <span className="text-xs font-bold text-primary mb-1 block">PASSO {item.step}</span>
+                  <h3 className="text-lg font-semibold mb-1 text-foreground">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
