@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -33,101 +33,119 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<any | null>(null);
   const { toast } = useToast();
   const currentUserIdRef = useRef<string | null>(null);
-  const initializedRef = useRef(false);
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = useCallback(async (userId: string) => {
     try {
       const [rolesResult, profileResult] = await Promise.all([
         supabase.from('user_roles').select('role').eq('user_id', userId),
         supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       ]);
       
+      console.log('[Auth] Fetched roles:', rolesResult.data, 'error:', rolesResult.error);
+      console.log('[Auth] Fetched profile:', profileResult.data ? 'found' : 'not found', 'error:', profileResult.error);
+      
       if (rolesResult.data) {
         setRoles(rolesResult.data.map(r => r.role as AppRole));
+      } else {
+        setRoles([]);
       }
       if (profileResult.data) {
         setProfile(profileResult.data);
+      } else {
+        setProfile(null);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('[Auth] Error fetching user data:', error);
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
-    if (user) {
+  const refreshProfile = useCallback(async () => {
+    const uid = currentUserIdRef.current;
+    if (uid) {
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', uid)
         .maybeSingle();
       
       if (profileData) {
         setProfile(profileData);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST (Supabase best practice)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        const newUserId = newSession?.user?.id ?? null;
-        const previousUserId = currentUserIdRef.current;
+    let mounted = true;
 
-        // Update session and user immediately
+    // 1. Set up auth listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        if (!mounted) return;
+        
+        console.log('[Auth] onAuthStateChange:', event, newSession?.user?.id);
+
+        const newUserId = newSession?.user?.id ?? null;
+        
+        // Always update session/user immediately
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
-        // Only fetch user data if user actually changed (not on token refreshes)
-        if (newUserId !== previousUserId) {
+        // Only refetch data if user actually changed
+        if (newUserId !== currentUserIdRef.current) {
           currentUserIdRef.current = newUserId;
           
           if (newUserId) {
-            // Set loading only on actual user change to prevent redirect loops
-            if (initializedRef.current) {
-              setLoading(true);
-            }
-            await fetchUserData(newUserId);
+            // Use setTimeout to avoid Supabase auth deadlock
+            // (onAuthStateChange callback should not make async Supabase calls directly)
+            setTimeout(async () => {
+              if (!mounted) return;
+              await fetchUserData(newUserId);
+              if (mounted) setLoading(false);
+            }, 0);
           } else {
             setRoles([]);
             setProfile(null);
+            setLoading(false);
           }
+        } else {
+          // Same user, just token refresh - don't change loading
+          setLoading(false);
         }
-
-        // Always mark as no longer loading after processing
-        setLoading(false);
-        initializedRef.current = true;
       }
     );
 
-    // Then get initial session
+    // 2. Get initial session
     supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
-      // Only process if onAuthStateChange hasn't already handled it
-      if (!initializedRef.current) {
-        const userId = initialSession?.user?.id ?? null;
+      if (!mounted) return;
+      
+      console.log('[Auth] Initial session:', initialSession?.user?.id);
+      
+      const userId = initialSession?.user?.id ?? null;
+      
+      // Only process if we haven't been updated by onAuthStateChange yet
+      if (currentUserIdRef.current === null && userId !== null) {
         currentUserIdRef.current = userId;
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
-        if (userId) {
-          await fetchUserData(userId);
-        }
-        setLoading(false);
-        initializedRef.current = true;
+        await fetchUserData(userId);
+      } else if (userId === null) {
+        currentUserIdRef.current = null;
       }
+      
+      if (mounted) setLoading(false);
     }).catch((err) => {
-      console.error('Error getting session:', err);
-      setLoading(false);
-      initializedRef.current = true;
+      console.error('[Auth] Error getting session:', err);
+      if (mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserData]);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast({
         title: "Erro no login",
@@ -136,17 +154,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
     return { error };
-  };
+  }, [toast]);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
+      options: { data: { full_name: fullName } },
     });
     if (error) {
       toast({
@@ -156,15 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
     return { error };
-  };
+  }, [toast]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setRoles([]);
     setProfile(null);
-  };
+    currentUserIdRef.current = null;
+  }, []);
 
-  const hasRole = (role: AppRole) => roles.includes(role);
+  const hasRole = useCallback((role: AppRole) => roles.includes(role), [roles]);
 
   const value: AuthContextType = {
     user,
@@ -177,11 +192,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     hasRole,
     refreshProfile,
-    isSuperAdmin: hasRole('super_admin'),
-    isFranchiseAdmin: hasRole('franchise_admin'),
-    isDriver: hasRole('driver'),
-    isPassenger: hasRole('passenger'),
-    isMerchant: hasRole('merchant'),
+    isSuperAdmin: roles.includes('super_admin'),
+    isFranchiseAdmin: roles.includes('franchise_admin'),
+    isDriver: roles.includes('driver'),
+    isPassenger: roles.includes('passenger'),
+    isMerchant: roles.includes('merchant'),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
