@@ -26,35 +26,35 @@ serve(async (req) => {
       );
     }
 
-    // Verify caller has a secret token or is super_admin
+    // Verify caller is super_admin
     const authHeader = req.headers.get("Authorization");
-    const adminSecret = req.headers.get("X-Admin-Secret");
-    const expectedSecret = Deno.env.get("ADMIN_RESET_SECRET");
-
-    let isAuthorized = false;
-
-    if (adminSecret && expectedSecret && adminSecret === expectedSecret) {
-      isAuthorized = true;
-    } else if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
-      
-      if (caller) {
-        const { data: roles } = await supabaseAdmin
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", caller.id)
-          .eq("role", "super_admin");
-
-        if (roles && roles.length > 0) {
-          isAuthorized = true;
-        }
-      }
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Not authenticated" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    if (!isAuthorized) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
+    
+    if (!caller) {
       return new Response(
-        JSON.stringify({ error: "Not authorized" }),
+        JSON.stringify({ error: "Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check super_admin role
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.id)
+      .eq("role", "super_admin");
+
+    if (!roles || roles.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Not authorized - super_admin only" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
