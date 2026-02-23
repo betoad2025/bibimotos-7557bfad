@@ -186,6 +186,20 @@ export function SettingsPanel({ franchiseId }: SettingsPanelProps) {
         if (error) throw error;
       }
 
+      // Sync payment keys to franchises table for Asaas/Woovi
+      if (['asaas', 'woovi', 'openpix'].includes(serviceName)) {
+        try {
+          await supabase.rpc('set_franchise_payment_settings', {
+            _franchise_id: franchiseId,
+            _payment_gateway: serviceName === 'openpix' ? 'woovi' : serviceName,
+            _payment_api_key: keyValue,
+            _payment_webhook_url: '',
+          });
+        } catch (syncError) {
+          console.error('Error syncing payment settings:', syncError);
+        }
+      }
+
       toast.success('Chave salva com sucesso!');
       setEditedKeys(prev => ({ ...prev, [serviceName]: '' }));
       fetchApiKeys();

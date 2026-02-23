@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   CreditCard, Wallet, Plus, Check, Copy, Clock,
-  QrCode, RefreshCw, Loader2, Sparkles
+  QrCode, RefreshCw, Loader2, Sparkles, AlertTriangle
 } from "lucide-react";
 import {
   Dialog,
@@ -46,12 +46,14 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
   const [showPayment, setShowPayment] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pixCode, setPixCode] = useState<string | null>(null);
+  const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [copied, setCopied] = useState(false);
   const [minPurchase, setMinPurchase] = useState(10);
   const [hasGateway, setHasGateway] = useState(false);
   const [gatewayName, setGatewayName] = useState<string | null>(null);
+  const [isMockPayment, setIsMockPayment] = useState(false);
 
   // Load min_credit_purchase and gateway config from franchise
   useEffect(() => {
@@ -109,8 +111,9 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
       return;
     }
     setLoading(true);
+    setIsMockPayment(false);
+    setQrCodeImage(null);
     try {
-      // Create credit transaction in pending state
       const { data: transaction, error: txError } = await supabase
         .from("credit_transactions")
         .insert({
@@ -129,7 +132,6 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
       setPaymentId(transaction.id);
       
       if (hasGateway) {
-        // Call edge function to generate real PIX via configured gateway
         try {
           const { data: pixData, error: pixError } = await supabase.functions.invoke('generate-pix', {
             body: {
@@ -137,6 +139,7 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
               transaction_id: transaction.id,
               amount: selectedPackage.price,
               description: `Créditos Bibi Motos - ${selectedPackage.credits} créditos`,
+              driver_id: driverId,
             },
           });
 
@@ -145,8 +148,10 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
           }
 
           setPixCode(pixData.pix_code);
+          if (pixData.qr_code_image) {
+            setQrCodeImage(pixData.qr_code_image);
+          }
           if (pixData.payment_id) {
-            // Update transaction with external payment_id
             await supabase
               .from("credit_transactions")
               .update({ payment_id: pixData.payment_id })
@@ -154,12 +159,12 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
           }
         } catch (gatewayError: any) {
           console.error("Gateway error, falling back to mock:", gatewayError);
-          // Fallback to mock if gateway fails
+          setIsMockPayment(true);
           const mockPixCode = `00020126580014BR.GOV.BCB.PIX0136${transaction.id}5204000053039865404${selectedPackage.price.toFixed(2)}5802BR5913BIBI MOTOS6008BRASIL62070503***6304`;
           setPixCode(mockPixCode);
         }
       } else {
-        // Mock PIX code when no gateway configured
+        setIsMockPayment(true);
         const mockPixCode = `00020126580014BR.GOV.BCB.PIX0136${transaction.id}5204000053039865404${selectedPackage.price.toFixed(2)}5802BR5913BIBI MOTOS6008BRASIL62070503***6304`;
         setPixCode(mockPixCode);
       }
@@ -167,9 +172,9 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
 
       toast({
         title: "PIX gerado!",
-        description: hasGateway
-          ? "Copie o código e pague para liberar seus créditos."
-          : "⚠️ Modo demonstração — gateway de pagamento não configurado.",
+        description: isMockPayment || !hasGateway
+          ? "⚠️ Modo demonstração — gateway de pagamento não configurado."
+          : "Copie o código e pague para liberar seus créditos.",
       });
     } catch (error: any) {
       toast({
@@ -198,8 +203,7 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
 
     setCheckingPayment(true);
     try {
-      if (hasGateway) {
-        // Check with real gateway
+      if (hasGateway && !isMockPayment) {
         const { data: statusData, error: statusError } = await supabase.functions.invoke('generate-pix', {
           body: {
             franchise_id: franchiseId,
@@ -220,13 +224,11 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
         }
       }
 
-      // Update transaction status
       await supabase
         .from("credit_transactions")
         .update({ payment_status: "paid" })
         .eq("id", paymentId);
 
-      // Update driver credits
       const { error: updateError } = await supabase
         .from("drivers")
         .update({ 
@@ -243,8 +245,10 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
 
       setShowPayment(false);
       setPixCode(null);
+      setQrCodeImage(null);
       setPaymentId(null);
       setSelectedPackage(null);
+      setIsMockPayment(false);
       onCreditsUpdated();
     } catch (error: any) {
       toast({
@@ -259,7 +263,9 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
   const handleCancelPayment = () => {
     setShowPayment(false);
     setPixCode(null);
+    setQrCodeImage(null);
     setPaymentId(null);
+    setIsMockPayment(false);
   };
 
   return (
@@ -377,6 +383,16 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Mock warning */}
+            {isMockPayment && (
+              <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                <AlertTriangle className="h-5 w-5 text-orange-600 shrink-0" />
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  <strong>Modo Demonstração</strong> — Gateway não configurado. Este PIX não é válido.
+                </p>
+              </div>
+            )}
+
             <div className="text-center">
               <p className="text-3xl font-bold text-primary">
                 R$ {selectedPackage?.price.toFixed(2)}
@@ -387,9 +403,17 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
               </p>
             </div>
 
-            {/* QR Code Placeholder */}
-            <div className="flex items-center justify-center p-8 bg-muted rounded-lg">
-              <QrCode className="h-32 w-32 text-muted-foreground" />
+            {/* QR Code - real image or placeholder */}
+            <div className="flex items-center justify-center p-4 bg-muted rounded-lg">
+              {qrCodeImage ? (
+                <img 
+                  src={qrCodeImage.startsWith('data:') ? qrCodeImage : `data:image/png;base64,${qrCodeImage}`} 
+                  alt="QR Code PIX" 
+                  className="w-48 h-48 object-contain"
+                />
+              ) : (
+                <QrCode className="h-32 w-32 text-muted-foreground" />
+              )}
             </div>
 
             {/* PIX Code */}
@@ -427,13 +451,18 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
 
             <Button
               onClick={handleCheckPayment}
-              disabled={checkingPayment}
+              disabled={checkingPayment || isMockPayment}
               className="w-full"
             >
               {checkingPayment ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   Verificando...
+                </>
+              ) : isMockPayment ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Indisponível (modo demo)
                 </>
               ) : (
                 <>

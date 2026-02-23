@@ -3,8 +3,62 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+async function getOrCreateAsaasCustomer(apiKey: string, supabase: any, driverId: string): Promise<string> {
+  // Get driver -> user -> profile for CPF/name
+  const { data: driver } = await supabase
+    .from("drivers")
+    .select("user_id")
+    .eq("id", driverId)
+    .single();
+
+  if (!driver) throw new Error("Driver not found");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, cpf, email, phone")
+    .eq("user_id", driver.user_id)
+    .single();
+
+  if (!profile) throw new Error("Profile not found");
+
+  const cpf = (profile.cpf || "").replace(/\D/g, "");
+  const name = profile.full_name || "Motorista";
+
+  // Try to find existing customer by CPF
+  if (cpf) {
+    const searchRes = await fetch(
+      `https://api.asaas.com/v3/customers?cpfCnpj=${cpf}`,
+      { headers: { access_token: apiKey } }
+    );
+    const searchData = await searchRes.json();
+    if (searchData.data && searchData.data.length > 0) {
+      return searchData.data[0].id;
+    }
+  }
+
+  // Create new customer
+  const createRes = await fetch("https://api.asaas.com/v3/customers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", access_token: apiKey },
+    body: JSON.stringify({
+      name,
+      cpfCnpj: cpf || undefined,
+      email: profile.email || undefined,
+      phone: (profile.phone || "").replace(/\D/g, "") || undefined,
+    }),
+  });
+  const createData = await createRes.json();
+
+  if (!createRes.ok) {
+    console.error("Asaas customer creation error:", createData);
+    throw new Error(createData.errors?.[0]?.description || "Failed to create Asaas customer");
+  }
+
+  return createData.id;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,7 +71,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body = await req.json();
-    const { franchise_id, transaction_id, amount, description, action } = body;
+    const { franchise_id, transaction_id, amount, description, action, driver_id } = body;
 
     if (!franchise_id) {
       return new Response(
@@ -45,59 +99,43 @@ serve(async (req) => {
 
     // Check payment status
     if (action === "check_status") {
+      const { data: tx } = await supabase
+        .from("credit_transactions")
+        .select("payment_id")
+        .eq("id", transaction_id)
+        .single();
+
+      if (!tx?.payment_id) {
+        return new Response(
+          JSON.stringify({ status: "pending" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       if (gateway === "asaas") {
-        // Check with Asaas API
-        const { data: tx } = await supabase
-          .from("credit_transactions")
-          .select("payment_id")
-          .eq("id", transaction_id)
-          .single();
-
-        if (!tx?.payment_id) {
-          return new Response(
-            JSON.stringify({ status: "pending" }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
         const statusRes = await fetch(
           `https://api.asaas.com/v3/payments/${tx.payment_id}`,
           { headers: { access_token: apiKey } }
         );
         const statusData = await statusRes.json();
-
         return new Response(
-          JSON.stringify({ 
-            status: statusData.status === "RECEIVED" || statusData.status === "CONFIRMED" 
-              ? "paid" : "pending" 
+          JSON.stringify({
+            status: statusData.status === "RECEIVED" || statusData.status === "CONFIRMED"
+              ? "paid" : "pending"
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       if (gateway === "woovi" || gateway === "openpix") {
-        const { data: tx } = await supabase
-          .from("credit_transactions")
-          .select("payment_id")
-          .eq("id", transaction_id)
-          .single();
-
-        if (!tx?.payment_id) {
-          return new Response(
-            JSON.stringify({ status: "pending" }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
         const statusRes = await fetch(
           `https://api.openpix.com.br/api/v1/charge/${tx.payment_id}`,
           { headers: { Authorization: apiKey } }
         );
         const statusData = await statusRes.json();
-
         return new Response(
-          JSON.stringify({ 
-            status: statusData.charge?.status === "COMPLETED" ? "paid" : "pending" 
+          JSON.stringify({
+            status: statusData.charge?.status === "COMPLETED" ? "paid" : "pending"
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -111,6 +149,29 @@ serve(async (req) => {
 
     // Generate PIX
     if (gateway === "asaas") {
+      // Get or create Asaas customer (required by API)
+      let customerId: string;
+      try {
+        // Try to get driver_id from transaction if not provided
+        let resolvedDriverId = driver_id;
+        if (!resolvedDriverId && transaction_id) {
+          const { data: tx } = await supabase
+            .from("credit_transactions")
+            .select("driver_id")
+            .eq("id", transaction_id)
+            .single();
+          resolvedDriverId = tx?.driver_id;
+        }
+        if (!resolvedDriverId) throw new Error("driver_id required for Asaas");
+        customerId = await getOrCreateAsaasCustomer(apiKey, supabase, resolvedDriverId);
+      } catch (custError: any) {
+        console.error("Customer creation error:", custError);
+        return new Response(
+          JSON.stringify({ error: "Erro ao criar cliente no Asaas: " + custError.message }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
       const paymentRes = await fetch("https://api.asaas.com/v3/payments", {
         method: "POST",
         headers: {
@@ -118,6 +179,7 @@ serve(async (req) => {
           access_token: apiKey,
         },
         body: JSON.stringify({
+          customer: customerId,
           billingType: "PIX",
           value: amount,
           description: description || "Créditos Bibi Motos",
@@ -162,7 +224,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           correlationID: transaction_id,
-          value: Math.round(amount * 100), // OpenPix uses cents
+          value: Math.round(amount * 100),
           comment: description || "Créditos Bibi Motos",
         }),
       });
