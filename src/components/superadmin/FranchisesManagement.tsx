@@ -173,7 +173,7 @@ export function FranchisesManagement({ franchises, cities, onRefresh }: Franchis
       const franchiseData = {
         name: formData.name,
         city_id: formData.city_id,
-        owner_id: formData.owner_id || null,
+        owner_id: formData.owner_id === "none" ? null : formData.owner_id || null,
         base_price: parseFloat(formData.base_price),
         price_per_km: parseFloat(formData.price_per_km),
         monthly_fee: parseFloat(formData.monthly_fee),
@@ -334,7 +334,7 @@ export function FranchisesManagement({ franchises, cities, onRefresh }: Franchis
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Nenhum</SelectItem>
+                          <SelectItem value="none">Nenhum</SelectItem>
                           {owners.map((owner) => (
                             <SelectItem key={owner.user_id} value={owner.user_id}>
                               {owner.full_name || owner.email}
