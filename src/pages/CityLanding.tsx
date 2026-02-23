@@ -22,12 +22,16 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoImage from "@/assets/logo-simbolo.png";
 import { useFranchiseBySubdomain } from "@/hooks/useFranchiseBySubdomain";
+import { useCityPixels } from "@/hooks/useCityPixels";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CityLanding({ subdomainOverride }: { subdomainOverride?: string }) {
   const { franchise, isLoading, error, subdomain } = useFranchiseBySubdomain(subdomainOverride);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // Inject marketing pixels for this city
+  useCityPixels(franchise?.city?.id);
   
   // Base path para links internos (preserva contexto da cidade)
   const cityBasePath = subdomain ? `/cidade/${subdomain}` : '';

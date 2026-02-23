@@ -1,20 +1,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Bike } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import logoImage from "@/assets/logo-simbolo.png";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center glow-primary">
-              <Bike className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
             <span className="text-xl font-bold">
               <span className="text-foreground">Bibi</span>
               <span className="text-accent">Motos</span>

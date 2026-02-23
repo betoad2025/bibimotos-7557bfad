@@ -49,6 +49,22 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [minPurchase, setMinPurchase] = useState(10);
+
+  // Load min_credit_purchase from franchise
+  useEffect(() => {
+    const loadMin = async () => {
+      const { data } = await supabase
+        .from("franchises")
+        .select("min_credit_purchase")
+        .eq("id", franchiseId)
+        .maybeSingle();
+      if (data && (data as any).min_credit_purchase) {
+        setMinPurchase(Number((data as any).min_credit_purchase));
+      }
+    };
+    loadMin();
+  }, [franchiseId]);
 
   const handleSelectPackage = (pkg: CreditPackage) => {
     setSelectedPackage(pkg);
@@ -74,6 +90,14 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
   const handleGeneratePix = async () => {
     if (!selectedPackage) return;
 
+    if (selectedPackage.price < minPurchase) {
+      toast({
+        title: "Valor abaixo do mínimo",
+        description: `A recarga mínima é de R$ ${minPurchase.toFixed(2)}.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     try {
       // Create credit transaction in pending state
@@ -242,6 +266,11 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
               = R$ {customAmount || "0"}
             </span>
           </div>
+          {minPurchase > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Recarga mínima: <span className="font-semibold text-primary">R$ {minPurchase.toFixed(2)}</span>
+            </p>
+          )}
 
           {/* Buy Button */}
           <Button
