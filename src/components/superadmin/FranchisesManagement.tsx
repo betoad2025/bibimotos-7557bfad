@@ -136,9 +136,8 @@ export function FranchisesManagement({ franchises, cities, onRefresh }: Franchis
     return matchesSearch && matchesStatus && matchesOwner;
   });
 
-  const availableCities = cities.filter(
-    (city) => !franchises.some((f) => f.city_id === city.id) || editingFranchise?.city_id === city.id
-  );
+  // All cities available - 1 Franchise = N Cities model
+  const availableCities = cities;
 
   const handleOpenDialog = (franchise?: Franchise) => {
     if (franchise) {
