@@ -220,9 +220,17 @@ export default function DriverDashboard() {
 
   if (!driverData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-        <p className="text-muted-foreground">Carregando dados do motorista...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 p-4">
+        <Bike className="h-16 w-16 text-primary/50" />
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold">Cadastro de Motorista</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Você ainda não possui cadastro como motorista ou seu registro está sendo processado. Complete seus dados para começar a trabalhar.
+          </p>
+        </div>
+        <Button onClick={() => window.location.href = "/complete-registration"}>
+          Completar Cadastro
+        </Button>
       </div>
     );
   }

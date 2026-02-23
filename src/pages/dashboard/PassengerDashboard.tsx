@@ -196,10 +196,15 @@ export default function PassengerDashboard() {
           />
         ) : (
           <Card className="border-2">
-            <CardContent className="py-8 text-center">
+            <CardContent className="py-8 text-center space-y-4">
+              <MapPin className="h-12 w-12 mx-auto text-primary/50" />
+              <h3 className="text-lg font-bold">Bem-vindo ao Bibi Motos!</h3>
               <p className="text-muted-foreground">
-                Carregando dados do passageiro...
+                Seu cadastro está sendo processado. Complete seus dados para solicitar sua primeira corrida.
               </p>
+              <Button onClick={() => window.location.href = "/complete-registration"}>
+                Completar Cadastro
+              </Button>
             </CardContent>
           </Card>
         )}

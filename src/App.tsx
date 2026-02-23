@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ChatSupport } from "@/components/support/ChatSupport";
 import FranchiseLanding from "./pages/FranchiseLanding";
+import Index from "./pages/Index";
 import CityLanding from "./pages/CityLanding";
 import CityLandingWrapper from "./pages/CityLandingWrapper";
 import Login from "./pages/Login";
@@ -62,6 +63,8 @@ const App = () => (
           <Routes>
             {/* Se for subdomínio de cidade, mostra landing específica */}
             <Route path="/" element={isSubdomain ? <CityLanding /> : <FranchiseLanding />} />
+            <Route path="/inicio" element={<Index />} />
+            <Route path="/franquia" element={<FranchiseLanding />} />
             <Route path="/cidade/:subdomain" element={<CityLandingWrapper />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bike, Package, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroRide from "@/assets/hero-ride.jpg";
 
 export const Hero = () => {
@@ -41,13 +42,17 @@ export const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <Button size="lg" className="btn-gradient text-lg px-8 py-6 glow-primary">
-              Solicitar Corrida
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" className="btn-gradient text-lg px-8 py-6 glow-primary" asChild>
+              <Link to="/register?role=passenger">
+                Solicitar Corrida
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white">
-              Seja um Motoboy
-              <Bike className="ml-2 h-5 w-5" />
+            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/30 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white" asChild>
+              <Link to="/register?role=driver">
+                Seja um Motoboy
+                <Bike className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
           </div>
 

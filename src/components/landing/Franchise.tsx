@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Building2, TrendingUp, Users, Headphones, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import franchiseHero from "@/assets/franchise-hero.jpg";
 
 export const Franchise = () => {
@@ -56,9 +57,11 @@ export const Franchise = () => {
               ))}
             </div>
 
-            <Button size="lg" className="btn-gradient glow-primary">
-              Quero ser franqueado
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" className="btn-gradient glow-primary" asChild>
+              <Link to="/franquia">
+                Quero ser franqueado
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
           </div>
 

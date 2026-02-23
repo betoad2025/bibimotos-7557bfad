@@ -4,6 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Bike, Users, TrendingUp, DollarSign, MapPin,
@@ -24,7 +31,9 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-4
 
 export default function FranchiseAdminDashboard() {
   const { user, signOut, profile } = useAuth();
-  const [franchise, setFranchise] = useState<any>(null);
+  const [franchises, setFranchises] = useState<any[]>([]);
+  const [selectedFranchiseId, setSelectedFranchiseId] = useState<string | null>(null);
+  const franchise = franchises.find(f => f.id === selectedFranchiseId) || franchises[0] || null;
   const [showNotifications, setShowNotifications] = useState(false);
   const [stats, setStats] = useState({
     totalDrivers: 0,
@@ -40,6 +49,9 @@ export default function FranchiseAdminDashboard() {
   });
   const [drivers, setDrivers] = useState<any[]>([]);
   const [neighborhoodStats, setNeighborhoodStats] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [hourlyData, setHourlyData] = useState<any[]>([]);
+  const [serviceTypeData, setServiceTypeData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Realtime notifications hook
@@ -52,113 +64,158 @@ export default function FranchiseAdminDashboard() {
   } = useRealtimeNotifications({ franchiseId: franchise?.id || '', userId: user?.id });
 
   useEffect(() => {
-    fetchData();
+    if (user) fetchFranchises();
   }, [user]);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (selectedFranchiseId) fetchFranchiseData(selectedFranchiseId);
+  }, [selectedFranchiseId]);
+
+  const fetchFranchises = async () => {
     if (!user) return;
+    const { data } = await supabase
+      .from('franchises')
+      .select('*, cities(name, state)')
+      .eq('owner_id', user.id);
     
-    try {
-      // Fetch franchise
-      const { data: franchiseData } = await supabase
-        .from('franchises')
-        .select(`*, cities(name, state)`)
-        .eq('owner_id', user.id)
-        .maybeSingle();
-      
-      if (franchiseData) {
-        setFranchise(franchiseData);
-
-        // Fetch drivers for this franchise
-        const { data: driversData } = await supabase
-          .from('drivers')
-          .select(`*, profiles:user_id(full_name, email, phone)`)
-          .eq('franchise_id', franchiseData.id);
-        setDrivers(driversData || []);
-
-        // Fetch rides
-        const { data: ridesData } = await supabase
-          .from('rides')
-          .select('*')
-          .eq('franchise_id', franchiseData.id);
-
-        const today = new Date().toISOString().split('T')[0];
-        const todayRides = ridesData?.filter(r => r.created_at.startsWith(today)) || [];
-        const todayRevenue = todayRides.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0);
-        const totalRevenue = ridesData?.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0) || 0;
-
-        // Fetch passengers count
-        const { count: passengersCount } = await supabase
-          .from('passengers')
-          .select('*', { count: 'exact', head: true })
-          .eq('franchise_id', franchiseData.id);
-
-        // Fetch merchants count
-        const { count: merchantsCount } = await supabase
-          .from('merchants')
-          .select('*', { count: 'exact', head: true })
-          .eq('franchise_id', franchiseData.id);
-
-        // Fetch neighborhood stats
-        const { data: nStats } = await supabase
-          .from('neighborhood_stats')
-          .select('*')
-          .eq('franchise_id', franchiseData.id)
-          .order('ride_count', { ascending: false })
-          .limit(10);
-        setNeighborhoodStats(nStats || []);
-
-        setStats({
-          totalDrivers: driversData?.length || 0,
-          onlineDrivers: driversData?.filter(d => d.is_online).length || 0,
-          pendingApproval: driversData?.filter(d => !d.is_approved).length || 0,
-          totalRides: ridesData?.length || 0,
-          todayRides: todayRides.length,
-          totalRevenue,
-          todayRevenue,
-          totalPassengers: passengersCount || 0,
-          totalMerchants: merchantsCount || 0,
-          avgRating: 4.8,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    if (data && data.length > 0) {
+      setFranchises(data);
+      setSelectedFranchiseId(data[0].id);
     }
     setLoading(false);
   };
 
-  const chartData = [
-    { name: 'Seg', corridas: 45, entregas: 12 },
-    { name: 'Ter', corridas: 52, entregas: 18 },
-    { name: 'Qua', corridas: 48, entregas: 15 },
-    { name: 'Qui', corridas: 61, entregas: 22 },
-    { name: 'Sex', corridas: 72, entregas: 28 },
-    { name: 'Sáb', corridas: 89, entregas: 35 },
-    { name: 'Dom', corridas: 67, entregas: 24 },
-  ];
+  const fetchFranchiseData = async (franchiseId: string) => {
+    if (!user) return;
+    
+    try {
+      // Fetch drivers for this franchise
+      const { data: driversData } = await supabase
+        .from('drivers')
+        .select(`*, profiles:user_id(full_name, email, phone)`)
+        .eq('franchise_id', franchiseId);
+      setDrivers(driversData || []);
 
-  const hourlyData = [
-    { hour: '06h', rides: 12 },
-    { hour: '08h', rides: 34 },
-    { hour: '10h', rides: 28 },
-    { hour: '12h', rides: 45 },
-    { hour: '14h', rides: 32 },
-    { hour: '16h', rides: 38 },
-    { hour: '18h', rides: 56 },
-    { hour: '20h', rides: 42 },
-    { hour: '22h', rides: 25 },
-  ];
+      // Fetch rides
+      const { data: ridesData } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('franchise_id', franchiseId);
 
-  const serviceTypeData = [
-    { name: 'Corridas', value: 65 },
-    { name: 'Entregas', value: 25 },
-    { name: 'Farmácia', value: 10 },
-  ];
+      const today = new Date().toISOString().split('T')[0];
+      const todayRides = ridesData?.filter(r => r.created_at.startsWith(today)) || [];
+      const todayRevenue = todayRides.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0);
+      const totalRevenue = ridesData?.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0) || 0;
+
+      // Fetch passengers count
+      const { count: passengersCount } = await supabase
+        .from('passengers')
+        .select('*', { count: 'exact', head: true })
+        .eq('franchise_id', franchiseId);
+
+      // Fetch merchants count
+      const { count: merchantsCount } = await supabase
+        .from('merchants')
+        .select('*', { count: 'exact', head: true })
+        .eq('franchise_id', franchiseId);
+
+      // Fetch neighborhood stats
+      const { data: nStats } = await supabase
+        .from('neighborhood_stats')
+        .select('*')
+        .eq('franchise_id', franchiseId)
+        .order('ride_count', { ascending: false })
+        .limit(10);
+      setNeighborhoodStats(nStats || []);
+
+      // Calculate average rating from drivers
+      const avgRating = driversData && driversData.length > 0
+        ? driversData.reduce((sum, d) => sum + (Number(d.rating) || 0), 0) / driversData.length
+        : 5.0;
+
+      setStats({
+        totalDrivers: driversData?.length || 0,
+        onlineDrivers: driversData?.filter(d => d.is_online).length || 0,
+        pendingApproval: driversData?.filter(d => !d.is_approved).length || 0,
+        totalRides: ridesData?.length || 0,
+        todayRides: todayRides.length,
+        totalRevenue,
+        todayRevenue,
+        totalPassengers: passengersCount || 0,
+        totalMerchants: merchantsCount || 0,
+        avgRating: Number(avgRating.toFixed(1)),
+      });
+
+      // Build real chart data from rides
+      buildChartData(ridesData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const buildChartData = (rides: any[]) => {
+    // Weekly chart - group by day of week
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const weeklyMap: Record<string, { corridas: number; entregas: number }> = {};
+    dayNames.forEach(d => { weeklyMap[d] = { corridas: 0, entregas: 0 }; });
+    
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    
+    rides.filter(r => new Date(r.created_at) >= lastWeek).forEach(r => {
+      const day = dayNames[new Date(r.created_at).getDay()];
+      if (r.service_type === 'delivery') {
+        weeklyMap[day].entregas++;
+      } else {
+        weeklyMap[day].corridas++;
+      }
+    });
+    
+    setChartData(dayNames.map(name => ({ name, ...weeklyMap[name] })));
+
+    // Hourly chart - today's rides by hour
+    const today = new Date().toISOString().split('T')[0];
+    const hourlyMap: Record<string, number> = {};
+    for (let h = 6; h <= 23; h += 2) {
+      hourlyMap[`${h.toString().padStart(2, '0')}h`] = 0;
+    }
+    
+    rides.filter(r => r.created_at.startsWith(today)).forEach(r => {
+      const hour = new Date(r.created_at).getHours();
+      const bucket = Math.floor(hour / 2) * 2;
+      const key = `${bucket.toString().padStart(2, '0')}h`;
+      if (hourlyMap[key] !== undefined) hourlyMap[key]++;
+    });
+    
+    setHourlyData(Object.entries(hourlyMap).map(([hour, rides]) => ({ hour, rides })));
+
+    // Service type pie chart
+    const typeMap: Record<string, number> = { ride: 0, delivery: 0, pharmacy: 0 };
+    rides.forEach(r => {
+      const type = r.service_type || 'ride';
+      if (typeMap[type] !== undefined) typeMap[type]++;
+      else typeMap.ride++;
+    });
+    const total = Object.values(typeMap).reduce((a, b) => a + b, 0) || 1;
+    setServiceTypeData([
+      { name: 'Corridas', value: Math.round((typeMap.ride / total) * 100) },
+      { name: 'Entregas', value: Math.round((typeMap.delivery / total) * 100) },
+      { name: 'Farmácia', value: Math.round((typeMap.pharmacy / total) * 100) },
+    ]);
+  };
 
   const handleApproveDriver = async (driverId: string) => {
     await supabase.from('drivers').update({ is_approved: true }).eq('id', driverId);
-    fetchData();
+    if (selectedFranchiseId) fetchFranchiseData(selectedFranchiseId);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   if (!franchise) {
     return (
@@ -174,16 +231,30 @@ export default function FranchiseAdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
+      <header className="sticky top-0 z-50 bg-card border-b shadow-sm">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
             <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
             <div>
-              <h1 className="text-xl font-bold text-purple-700">{franchise.name}</h1>
+              <h1 className="text-xl font-bold text-primary">{franchise?.name || 'Franquia'}</h1>
               <p className="text-xs text-muted-foreground">
-                {franchise.cities?.name}/{franchise.cities?.state} • Franqueado
+                {franchise?.cities?.name}/{franchise?.cities?.state} • Franqueado
               </p>
             </div>
+            {franchises.length > 1 && (
+              <Select value={selectedFranchiseId || ''} onValueChange={setSelectedFranchiseId}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Selecionar cidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {franchises.map(f => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.cities?.name} - {f.cities?.state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
