@@ -1560,7 +1560,7 @@ export type Database = {
           {
             foreignKeyName: "franchises_city_id_fkey"
             columns: ["city_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
           },
@@ -3077,7 +3077,7 @@ export type Database = {
           {
             foreignKeyName: "franchises_city_id_fkey"
             columns: ["city_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
           },
@@ -3179,6 +3179,10 @@ export type Database = {
           payment_gateway: string
           payment_webhook_url: string
         }[]
+      }
+      get_passenger_driver_ids: {
+        Args: { _user_id: string }
+        Returns: string[]
       }
       get_ride_driver_info: {
         Args: { p_ride_id: string }
