@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,10 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [profile, setProfile] = useState<any | null>(null);
   const { toast } = useToast();
+  const currentUserIdRef = useRef<string | null>(null);
+  const initializedRef = useRef(false);
 
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch roles and profile in parallel
       const [rolesResult, profileResult] = await Promise.all([
         supabase.from('user_roles').select('role').eq('user_id', userId),
         supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
@@ -67,37 +68,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session - wait for roles before setting loading=false
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchUserData(session.user.id);
+    // Set up auth state listener FIRST (Supabase best practice)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        const newUserId = newSession?.user?.id ?? null;
+        const previousUserId = currentUserIdRef.current;
+
+        // Update session and user immediately
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+
+        // Only fetch user data if user actually changed (not on token refreshes)
+        if (newUserId !== previousUserId) {
+          currentUserIdRef.current = newUserId;
+          
+          if (newUserId) {
+            // Set loading only on actual user change to prevent redirect loops
+            if (initializedRef.current) {
+              setLoading(true);
+            }
+            await fetchUserData(newUserId);
+          } else {
+            setRoles([]);
+            setProfile(null);
+          }
+        }
+
+        // Always mark as no longer loading after processing
+        setLoading(false);
+        initializedRef.current = true;
       }
-      setLoading(false);
+    );
+
+    // Then get initial session
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      // Only process if onAuthStateChange hasn't already handled it
+      if (!initializedRef.current) {
+        const userId = initialSession?.user?.id ?? null;
+        currentUserIdRef.current = userId;
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        if (userId) {
+          await fetchUserData(userId);
+        }
+        setLoading(false);
+        initializedRef.current = true;
+      }
     }).catch((err) => {
       console.error('Error getting session:', err);
       setLoading(false);
+      initializedRef.current = true;
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        // Set loading true during auth transitions to prevent premature redirects
-        if (session?.user?.id !== user?.id) {
-          setLoading(true);
-        }
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchUserData(session.user.id);
-        } else {
-          setRoles([]);
-          setProfile(null);
-        }
-        setLoading(false);
-      }
-    );
 
     return () => subscription.unsubscribe();
   }, []);
