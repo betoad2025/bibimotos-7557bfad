@@ -1,97 +1,141 @@
 
-# Plano de Correção: Dashboard Branco e Criação de Franquias
 
-## Problemas Identificados
+# Overhaul Completo: Marketing por Cidade + Visual Cinematografico Premium
 
-### 1. Recursão Infinita nas Policies RLS (causa da tela branca)
-Os logs do banco mostram erros repetidos:
-- `infinite recursion detected in policy for relation "rides"`
-- `infinite recursion detected in policy for relation "drivers"`
+## Parte 1: Marketing Pixels por Cidade no Super Admin
 
-**Causa raiz**: A tabela `drivers` tem uma policy que consulta `rides`, e a tabela `rides` tem policies que consultam `drivers`. Isso cria um loop circular:
+### Problema
+O formulario de cidades no painel Super Admin so tem campos basicos (nome, estado, subdomain, lat/lng). Faltam:
+- Pixels de marketing (Facebook/Meta, Google Ads, Google Analytics, TikTok, Taboola)
+- Chave de API do gateway de pagamento
+- Valor minimo de recarga do motorista
+- Eventos de conversao automaticos (motorista primeira recarga, passageiro cadastro, primeira corrida)
+
+### Solucao
+
+#### 1. Migracao de Banco de Dados
+Atualmente, o marketing fica na tabela `franchise_marketing` (por franquia). Como o modelo e multi-tenant onde uma franquia pode ter multiplas cidades, os pixels precisam ser por **cidade** (cada cidade pode ter campanhas diferentes).
+
+Criar tabela `city_marketing`:
 
 ```text
-rides (SELECT) --> drivers (subquery)
-drivers (SELECT) --> rides (subquery "Passengers can view driver basic info for their rides")
---> drivers (SELECT) --> rides ... [LOOP INFINITO]
+city_marketing
+  id             uuid (PK)
+  city_id        uuid (FK -> cities.id)
+  facebook_pixel_id       text
+  facebook_access_token   text
+  google_ads_id           text
+  google_ads_conversion_id text
+  google_analytics_id     text
+  tiktok_pixel_id         text
+  taboola_pixel_id        text  (NOVO - nao existia antes)
+  resend_api_key          text  (NOVO)
+  created_at     timestamptz
+  updated_at     timestamptz
 ```
 
-A policy problemática em `drivers` e:
-- **"Passengers can view driver basic info for their rides"** - faz `SELECT` em `rides` que por sua vez precisa avaliar policies de `drivers`
+Adicionar `min_credit_purchase` na tabela `franchises` (valor minimo de recarga do motoboy).
 
-### 2. Constraint UNIQUE em `franchises.city_id` (bloqueia criação)
-Existe um indice `franchises_city_id_key` (UNIQUE) na coluna `city_id`. Isso impede:
-- Criar uma nova franquia para uma cidade que ja tem franquia
-- O modelo 1 Franquia = N Cidades (decidido anteriormente)
+RLS: Super admins podem tudo. Franchise owners podem ver/editar marketing das cidades de suas franquias.
 
-### 3. Policies duplicadas na tabela `drivers`
-Existem policies sobrepostas que podem causar conflitos:
-- `drivers_select_own` + `Drivers can view own data` (mesma regra)
-- `drivers_update_own` + `Drivers can update own data` (mesma regra)
-- `drivers_all_super_admin` + `Super admins can manage all drivers` (mesma regra)
-- `drivers_select_franchise_admin` + `Franchise admins can view franchise drivers` (mesma regra)
+#### 2. Refatorar `CitiesManagement.tsx`
+Expandir o dialog de editar cidade com abas:
+- **Aba "Dados"**: Nome, estado, subdomain, populacao, lat/lng (atual)
+- **Aba "Operacional"**: Gateway de pagamento, chave API (com toggle mostrar/ocultar), webhook URL, preco base, preco por km, debito por corrida, recarga minima
+- **Aba "Marketing"**: Campos de pixel para cada plataforma (Facebook, Google Ads, GA4, TikTok, Taboola, Resend) com status "Configurado/Pendente" visual
+
+Ao salvar, atualiza 3 tabelas: `cities`, `franchises` (vinculada), e `city_marketing`.
+
+#### 3. Injetar Pixels na Pagina da Cidade (`CityLanding.tsx`)
+Buscar os pixels da `city_marketing` e injetar dinamicamente no `<head>`:
+- Facebook Pixel via `fbq()`
+- Google Ads/GA4 via `gtag()`
+- TikTok Pixel via `ttq`
+- Taboola via snippet nativo
+
+#### 4. Eventos de Conversao Automaticos
+Criar um hook `useConversionTracking` que dispara eventos nos momentos-chave:
+
+| Momento | Evento Facebook | Evento Google | Quem |
+|---------|----------------|---------------|------|
+| Cadastro completo | `CompleteRegistration` | `sign_up` | Todos |
+| Primeira recarga do motoboy | `Purchase` | `purchase` | Motorista |
+| Primeira corrida do passageiro | `Purchase` | `purchase` | Passageiro |
+| Cadastro do lojista | `Lead` | `generate_lead` | Lojista |
+| Inicio de cadastro | `InitiateCheckout` | `begin_checkout` | Todos |
+
+#### 5. Atualizar `CreditsShop.tsx`
+Respeitar `min_credit_purchase` da franquia e bloquear recargas abaixo do minimo.
 
 ---
 
-## Solução
+## Parte 2: Overhaul Visual Cinematografico
 
-### Etapa 1: Corrigir recursão infinita nas RLS policies
+### Problema
+As paginas (landing principal e pagina da cidade) estao "pobrezinhas" sem imagens e sem o impacto visual de plataformas como Uber e 99. As imagens geradas anteriormente parecem nao estar aparecendo ou o visual nao esta no nivel desejado.
 
-**Acao**: Remover a policy circular de `drivers` e reescreve-la usando a funcao `get_driver_basic_info()` ja existente ou simplesmente permitir SELECT basico sem subquery em `rides`.
+### Ciencia da Comunicacao (Uber/99)
+A estrategia visual dessas plataformas se baseia em:
+1. **Pessoas reais em acao** - rostos, sorrisos, interacao humana
+2. **Cenarios urbanos reconheciveis** - ruas movimentadas, cidade viva
+3. **Hierarquia visual clara** - headline grande, imagem dominante, CTA contrastante
+4. **Secoes alternadas** - imagem/texto lado a lado, alternando esquerda/direita
+5. **Prova social** - numeros, depoimentos, badges de confianca
+6. **Movimento implicito** - fotos com blur de velocidade, angulos dinamicos
 
-Policies a remover de `drivers`:
-- `Passengers can view driver basic info for their rides` (causa da recursão)
-- `Drivers can view own data` (duplicada de `drivers_select_own`)
-- `Drivers can update own data` (duplicada de `drivers_update_own`)  
-- `Super admins can manage all drivers` (duplicada de `drivers_all_super_admin`)
-- `Franchise admins can view franchise drivers` (duplicada de `drivers_select_franchise_admin`)
-- `Franchise admins can manage franchise drivers` (duplicada de `drivers_update_franchise_admin`)
+### Plano Visual
 
-Nova policy para passageiros verem motoristas (sem recursão):
-- Usar `auth.uid()` direto para verificar se e passageiro, sem consultar `rides`
+#### Landing Principal (`Index.tsx` e componentes)
 
-### Etapa 2: Remover UNIQUE constraint de `franchises.city_id`
+**Hero** - Regenerar imagem hero com foco em: motociclista Bibi Motos com passageiro sorridente em avenida movimentada brasileira, paleta roxo/dourado, golden hour.
 
-**Acao**: `DROP INDEX franchises_city_id_key` para permitir multiplas franquias por cidade e permitir criacao de novas franquias.
+**Services** - 3 cards com imagens distintas:
+- Corridas: passageira sorridente na garupa
+- Entregas: entregador com caixa de delivery
+- Farmacia: entregador com sacola de farmacia
 
-### Etapa 3: Limpar policies duplicadas de `rides`
+**How It Works** - Imagem lateral mostrando mao segurando celular com app aberto, cidade ao fundo desfocada.
 
-Verificar e garantir que nenhuma policy de `rides` cause recursão apos a limpeza.
+**Franchise** - Empresario sorridente com tablet, graficos de crescimento ao fundo, ambiente de escritorio moderno.
+
+**Seções novas sugeridas**:
+- **Depoimentos** - Cards com foto de avatar + citacao (estilo Uber)
+- **Download App** - Mockup de celular com QR code
+
+#### Pagina da Cidade (`CityLanding.tsx`)
+Aplicar o mesmo padrao visual da landing principal mas contextualizado para a cidade. Adicionar secao de "Numeros da cidade" com contadores animados.
+
+#### Geracoes de Imagens
+Gerar 6-8 novas imagens cinematograficas de alta qualidade usando o modelo de imagem, todas com:
+- Iluminacao dramatica (golden hour ou neon noturno)
+- Paleta roxo/dourado consistente
+- Pessoas brasileiras em cenarios urbanos
+- Foco em emocao e conexao humana
 
 ---
 
-## Detalhes Tecnicos
+## Arquivos Modificados
 
-### Migration SQL
+| Arquivo | Alteracao |
+|---------|----------|
+| Migracao SQL | Criar `city_marketing`, adicionar `min_credit_purchase` em `franchises` |
+| `src/components/superadmin/CitiesManagement.tsx` | Adicionar abas com campos operacionais e marketing |
+| `src/pages/CityLanding.tsx` | Injetar pixels dinamicamente, melhorar visual |
+| `src/hooks/useConversionTracking.ts` | NOVO - hook para disparar eventos de conversao |
+| `src/components/landing/Hero.tsx` | Regenerar hero cinematografico |
+| `src/components/landing/Services.tsx` | Melhorar cards com imagens mais impactantes |
+| `src/components/landing/HowItWorks.tsx` | Layout mais dinamico |
+| `src/components/landing/Franchise.tsx` | Secao mais impactante com prova social |
+| `src/components/landing/Navbar.tsx` | Usar logo oficial, ajustes visuais |
+| `src/components/driver/CreditsShop.tsx` | Validar recarga minima |
+| 6-8 novas imagens em `src/assets/` | Geradas via AI com padrao cinematografico |
 
-```sql
--- 1. Remover policies duplicadas/circulares de drivers
-DROP POLICY IF EXISTS "Passengers can view driver basic info for their rides" ON drivers;
-DROP POLICY IF EXISTS "Drivers can view own data" ON drivers;
-DROP POLICY IF EXISTS "Drivers can update own data" ON drivers;
-DROP POLICY IF EXISTS "Super admins can manage all drivers" ON drivers;
-DROP POLICY IF EXISTS "Franchise admins can view franchise drivers" ON drivers;
-DROP POLICY IF EXISTS "Franchise admins can manage franchise drivers" ON drivers;
+## Sequencia de Implementacao
+1. Migracao do banco (tabela `city_marketing` + coluna `min_credit_purchase`)
+2. Gerar todas as imagens cinematograficas em paralelo
+3. Refatorar `CitiesManagement.tsx` com abas completas
+4. Criar hook `useConversionTracking`
+5. Injetar pixels em `CityLanding.tsx`
+6. Overhaul visual de todos os componentes da landing
+7. Atualizar `CreditsShop.tsx` com validacao de minimo
 
--- 2. Criar policy segura para passageiros (sem recursão)
-CREATE POLICY "Passengers can view their ride drivers"
-ON drivers FOR SELECT
-USING (
-  id IN (
-    SELECT r.driver_id FROM rides r
-    JOIN passengers p ON r.passenger_id = p.id
-    WHERE p.user_id = auth.uid()
-  )
-);
--- NOTA: essa policy ainda referencia rides, mas rides nao referencia
--- drivers com esta policy especifica. O loop e quebrado porque
--- removemos a policy circular original.
-
--- 3. Remover UNIQUE constraint de city_id
-ALTER TABLE franchises DROP CONSTRAINT IF EXISTS franchises_city_id_key;
-```
-
-### Resultado esperado
-- Dashboard carrega normalmente (sem erros de recursão)
-- Criação de novas franquias funciona
-- Modelo 1 Franquia = N Cidades habilitado
