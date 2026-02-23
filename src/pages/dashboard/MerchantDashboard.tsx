@@ -16,6 +16,7 @@ import {
   LogOut, Store, Phone, CheckCircle, XCircle, Loader2,
   Navigation, DollarSign
 } from "lucide-react";
+import { SOSButton } from "@/components/ride/SOSButton";
 import {
   Dialog,
   DialogContent,
@@ -628,6 +629,15 @@ export default function MerchantDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Floating SOS Button when there are active deliveries */}
+      {stats.pendingDeliveries > 0 && merchantData && (
+        <SOSButton
+          franchiseId={merchantData.franchise_id}
+          reporterType="merchant"
+          variant="floating"
+        />
+      )}
     </div>
   );
 }

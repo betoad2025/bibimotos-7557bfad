@@ -8,7 +8,11 @@ import { UserAvatar } from "@/components/profile/UserAvatar";
 import { ReputationBadge } from "@/components/profile/ReputationBadge";
 import { RideRequestForm } from "@/components/ride/RideRequestForm";
 import { RideTrackingCard } from "@/components/ride/RideTrackingCard";
+import { RideMapTracker } from "@/components/ride/RideMapTracker";
 import { EnhancedRatingModal } from "@/components/ride/EnhancedRatingModal";
+import { TipModal } from "@/components/ride/TipModal";
+import { SOSButton } from "@/components/ride/SOSButton";
+import { InAppPayment } from "@/components/payment/InAppPayment";
 import { useRideRealtime } from "@/hooks/useRideRealtime";
 import { useRideService } from "@/hooks/useRideService";
 import logoImage from "@/assets/logo-simbolo.png";
@@ -34,6 +38,9 @@ export default function PassengerDashboard() {
   const [passengerData, setPassengerData] = useState<PassengerData | null>(null);
   const [currentRideId, setCurrentRideId] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [rideJustCompleted, setRideJustCompleted] = useState(false);
 
   const { ride, driver, loading: rideLoading } = useRideRealtime(currentRideId);
 
@@ -107,16 +114,29 @@ export default function PassengerDashboard() {
     );
     
     if (success) {
-      setShowRatingModal(true);
+      setRideJustCompleted(true);
+      setShowPaymentModal(true);
     }
+  };
+
+  const handlePaymentComplete = () => {
+    setShowPaymentModal(false);
+    setShowRatingModal(true);
   };
 
   const handleRatingSubmit = async (rating: number) => {
     if (!ride) return;
     
     await rateRide(ride.id, rating, false);
-    setCurrentRideId(null);
     setShowRatingModal(false);
+    // Show tip modal after rating
+    setShowTipModal(true);
+  };
+
+  const handleTipClose = () => {
+    setShowTipModal(false);
+    setRideJustCompleted(false);
+    setCurrentRideId(null);
   };
 
   const handleCancelRide = () => {
@@ -178,16 +198,29 @@ export default function PassengerDashboard() {
           </CardContent>
         </Card>
 
-        {/* Active Ride or Request Form */}
+        {/* Active Ride with Map */}
         {hasActiveRide ? (
-          <RideTrackingCard
-            ride={ride}
-            driver={driver}
-            isDriver={false}
-            onCancel={handleCancelRide}
-            onComplete={handleCompleteRide}
-            onRate={() => setShowRatingModal(true)}
-          />
+          <>
+            {/* Real-time map tracker */}
+            <RideMapTracker
+              rideId={ride.id}
+              originLat={Number(ride.origin_lat) || 0}
+              originLng={Number(ride.origin_lng) || 0}
+              destinationLat={Number(ride.destination_lat) || 0}
+              destinationLng={Number(ride.destination_lng) || 0}
+              driverLat={driver?.currentLat}
+              driverLng={driver?.currentLng}
+              status={ride.status || "pending"}
+            />
+            <RideTrackingCard
+              ride={ride}
+              driver={driver}
+              isDriver={false}
+              onCancel={handleCancelRide}
+              onComplete={handleCompleteRide}
+              onRate={() => setShowRatingModal(true)}
+            />
+          </>
         ) : passengerData ? (
           <RideRequestForm
             franchiseId={passengerData.franchise_id}
@@ -253,13 +286,37 @@ export default function PassengerDashboard() {
         )}
       </main>
 
+      {/* Floating SOS Button during active ride */}
+      {hasActiveRide && passengerData && (
+        <SOSButton
+          rideId={ride.id}
+          franchiseId={passengerData.franchise_id}
+          reporterType="passenger"
+          variant="floating"
+        />
+      )}
+
+      {/* Payment Modal after ride completion */}
+      {showPaymentModal && ride && (
+        <InAppPayment
+          open={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setShowRatingModal(true);
+          }}
+          rideId={ride.id}
+          amount={ride.final_price || ride.estimated_price || 0}
+          onPaymentComplete={handlePaymentComplete}
+        />
+      )}
+
       {/* Rating Modal */}
       {showRatingModal && driver && ride && (
         <EnhancedRatingModal
           open={showRatingModal}
           onClose={() => {
             setShowRatingModal(false);
-            setCurrentRideId(null);
+            setShowTipModal(true);
           }}
           onSubmit={handleRatingSubmit}
           userName={driver.name}
@@ -269,6 +326,19 @@ export default function PassengerDashboard() {
           userType="driver"
           ridePrice={ride.final_price || ride.estimated_price || undefined}
           rideDistance={ride.distance_km || undefined}
+        />
+      )}
+
+      {/* Tip Modal after rating */}
+      {showTipModal && driver && ride && passengerData && (
+        <TipModal
+          open={showTipModal}
+          onClose={handleTipClose}
+          rideId={ride.id}
+          driverId={ride.driver_id || ""}
+          passengerId={passengerData.id}
+          franchiseId={passengerData.franchise_id}
+          driverName={driver.name}
         />
       )}
     </div>
