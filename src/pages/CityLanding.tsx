@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import heroRide from "@/assets/hero-ride.jpg";
 import { Badge } from "@/components/ui/badge";
 import { 
   Bike, 
@@ -223,13 +224,14 @@ export default function CityLanding({ subdomainOverride }: { subdomainOverride?:
 
       {/* HERO */}
       <section id="hero" className="relative min-h-screen flex items-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/80" />
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(255,200,0,0.3),transparent)]" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-400/30 rounded-full blur-[128px]" />
-        </div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:80px_80px]" />
+        {/* Cinematic Background Image */}
+        <img
+          src={heroRide}
+          alt={`Bibi Motos em ${cityName}`}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-primary/40 to-primary/20" />
+        <div className="absolute inset-0 bg-black/30" />
 
         <div className="container relative z-10 mx-auto px-4 lg:px-8 pt-32 pb-20">
           <div className="max-w-4xl mx-auto text-center space-y-8">

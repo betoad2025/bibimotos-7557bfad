@@ -7,6 +7,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import registerHero from "@/assets/register-hero.jpg";
+import logoFull from "@/assets/logo-full.png";
 
 type UserType = "passenger" | "driver" | "merchant";
 
@@ -77,26 +79,20 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
         <div className="w-full max-w-md py-8">
           {/* Back link */}
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar ao início
           </Link>
 
           {/* Logo */}
-          <div className="flex items-center gap-2 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center glow-primary">
-              <Bike className="h-7 w-7 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold">
-              <span className="text-foreground">Bibi</span>
-              <span className="text-accent">Motos</span>
-            </span>
+          <div className="flex items-center gap-3 mb-10">
+            <img src={logoFull} alt="Bibi Motos" className="h-12" />
           </div>
 
           {/* Header */}
@@ -132,7 +128,7 @@ const Register = () => {
                   placeholder="Seu nome"
                   value={formData.name}
                   onChange={(e) => updateField("name", e.target.value)}
-                  className="pl-10 h-12 bg-input border-border"
+                  className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                 />
               </div>
@@ -148,7 +144,7 @@ const Register = () => {
                   placeholder="seu@email.com"
                   value={formData.email}
                   onChange={(e) => updateField("email", e.target.value)}
-                  className="pl-10 h-12 bg-input border-border"
+                  className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                 />
               </div>
@@ -164,7 +160,7 @@ const Register = () => {
                   placeholder="(00) 00000-0000"
                   value={formData.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
-                  className="pl-10 h-12 bg-input border-border"
+                  className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                 />
               </div>
@@ -180,7 +176,7 @@ const Register = () => {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => updateField("password", e.target.value)}
-                  className="pl-10 h-12 bg-input border-border"
+                  className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                 />
               </div>
@@ -196,7 +192,7 @@ const Register = () => {
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={(e) => updateField("confirmPassword", e.target.value)}
-                  className="pl-10 h-12 bg-input border-border"
+                  className="pl-10 h-12 bg-muted/50 border-border rounded-xl"
                   required
                 />
               </div>
@@ -212,7 +208,7 @@ const Register = () => {
 
             <Button
               type="submit"
-              className="w-full h-12 btn-gradient text-lg"
+              className="w-full h-12 btn-gradient text-lg rounded-xl font-semibold shadow-lg shadow-primary/25"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -227,25 +223,30 @@ const Register = () => {
           </form>
 
           {/* Login link */}
-          <p className="mt-6 text-center text-muted-foreground">
+          <p className="mt-8 text-center text-muted-foreground">
             Já tem uma conta?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
+            <Link to="/login" className="text-primary font-semibold hover:underline">
               Entrar
             </Link>
           </p>
         </div>
       </div>
 
-      {/* Right side - Visual */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-accent/20 to-primary/10 p-8">
-        <div className="text-center max-w-md">
-          <div className="w-32 h-32 mx-auto mb-8 rounded-3xl bg-accent/20 flex items-center justify-center animate-float">
-            <Bike className="h-16 w-16 text-accent" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4">
-            Junte-se a <span className="text-gradient-accent">milhares</span> de usuários
+      {/* Right side - Cinematic Hero Image */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden">
+        <img
+          src={registerHero}
+          alt="Bibi Motos - Cadastre-se"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/30 to-transparent" />
+
+        <div className="relative z-10 flex flex-col justify-end p-12 text-white">
+          <h2 className="text-4xl font-bold mb-3 drop-shadow-lg">
+            Bibi Motos <span className="text-accent">Brasil</span>
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-lg text-white/90 max-w-md drop-shadow-md">
             {userType === "passenger" && "Viaje com segurança e agilidade para qualquer lugar da cidade."}
             {userType === "driver" && "Ganhe dinheiro extra com flexibilidade e autonomia."}
             {userType === "merchant" && "Entregue seus produtos de forma rápida e confiável."}
