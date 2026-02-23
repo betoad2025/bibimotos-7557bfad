@@ -96,10 +96,25 @@ serve(async (req) => {
 
     } else if (action === 'verify') {
       // Verificar código
+      // Buscar o profile para obter o user_id do telefone informado
+      const { data: verifyProfile } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('phone', phone)
+        .single();
+
+      if (!verifyProfile) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Telefone não encontrado' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { data: events, error: eventError } = await supabase
         .from('analytics_events')
         .select('*')
         .eq('event_type', 'password_reset_request')
+        .eq('user_id', verifyProfile.user_id)
         .order('created_at', { ascending: false })
         .limit(1);
 
