@@ -35,25 +35,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch roles
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      // Fetch roles and profile in parallel
+      const [rolesResult, profileResult] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+      ]);
       
-      if (rolesData) {
-        setRoles(rolesData.map(r => r.role as AppRole));
+      if (rolesResult.data) {
+        setRoles(rolesResult.data.map(r => r.role as AppRole));
       }
-
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (profileData) {
-        setProfile(profileData);
+      if (profileResult.data) {
+        setProfile(profileResult.data);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -75,13 +67,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session - wait for roles before setting loading=false
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id);
+        await fetchUserData(session.user.id);
       }
+      setLoading(false);
+    }).catch((err) => {
+      console.error('Error getting session:', err);
       setLoading(false);
     });
 
@@ -91,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchUserData(session.user.id);
+          await fetchUserData(session.user.id);
         } else {
           setRoles([]);
           setProfile(null);
