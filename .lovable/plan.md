@@ -1,87 +1,97 @@
 
+# Plano de Correção: Dashboard Branco e Criação de Franquias
 
-# Plano para Ativar Todos os Subdominios
+## Problemas Identificados
 
-## Situacao Atual
+### 1. Recursão Infinita nas Policies RLS (causa da tela branca)
+Os logs do banco mostram erros repetidos:
+- `infinite recursion detected in policy for relation "rides"`
+- `infinite recursion detected in policy for relation "drivers"`
 
-**Banco de dados** - Tudo OK:
-- 9 cidades cadastradas com subdominios
-- 8 franquias ativas vinculadas (Guaxupe nao tem franquia)
+**Causa raiz**: A tabela `drivers` tem uma policy que consulta `rides`, e a tabela `rides` tem policies que consultam `drivers`. Isso cria um loop circular:
 
-**Codigo** - Tudo OK:
-- Hook `useFranchiseBySubdomain` detecta subdominios corretamente
-- Rota `/cidade/:subdomain` funciona como fallback
-- View `franchises_public` acessivel sem autenticacao
+```text
+rides (SELECT) --> drivers (subquery)
+drivers (SELECT) --> rides (subquery "Passengers can view driver basic info for their rides")
+--> drivers (SELECT) --> rides ... [LOOP INFINITO]
+```
 
-**Problema real**: Os subdominios precisam ser adicionados manualmente nas configuracoes de dominio do projeto Lovable, e o app precisa ser **republicado** para que o codigo atualizado funcione nos dominios customizados.
+A policy problemática em `drivers` e:
+- **"Passengers can view driver basic info for their rides"** - faz `SELECT` em `rides` que por sua vez precisa avaliar policies de `drivers`
 
----
+### 2. Constraint UNIQUE em `franchises.city_id` (bloqueia criação)
+Existe um indice `franchises_city_id_key` (UNIQUE) na coluna `city_id`. Isso impede:
+- Criar uma nova franquia para uma cidade que ja tem franquia
+- O modelo 1 Franquia = N Cidades (decidido anteriormente)
 
-## Passo 1: Adicionar Todos os Subdominios no Lovable
-
-Nas configuracoes do projeto (Settings > Domains), adicionar cada um destes subdominios:
-
-| Subdominio | Cidade |
-|---|---|
-| `passos.bibimotos.com.br` | Passos - MG |
-| `salvador.bibimotos.com.br` | Salvador - BA |
-| `jundiai.bibimotos.com.br` | Jundiai - SP |
-| `franca.bibimotos.com.br` | Franca - SP |
-| `aracaju.bibimotos.com.br` | Aracaju - SE |
-| `carmo.bibimotos.com.br` | Carmo do Rio Claro - MG |
-| `riopreto.bibimotos.com.br` | Sao Jose do Rio Preto - SP |
-| `paraiso.bibimotos.com.br` | Sao Sebastiao do Paraiso - MG |
-
-**IMPORTANTE**: Nenhum subdominio deve ser marcado como "Primary". Apenas `bibimotos.com.br` deve ser o Primary. Marcar um subdominio como Primary causa redirecionamento 301 automatico que quebra tudo.
-
-## Passo 2: Configurar DNS no Cloudflare
-
-Para cada subdominio acima, criar um registro A no Cloudflare:
-
-- **Tipo**: A
-- **Nome**: o subdominio (ex: `passos`, `salvador`, `jundiai`, etc.)
-- **Valor**: `185.158.133.1`
-- **Proxy**: **DNS only** (nuvem cinza - NAO usar proxy laranja)
-
-Se voce ja tem um registro wildcard (`*`) apontando para `185.158.133.1`, os registros DNS ja estao cobertos. Mas cada subdominio ainda precisa ser adicionado individualmente no painel do Lovable (Passo 1).
-
-## Passo 3: Republicar o App
-
-Apos adicionar todos os subdominios:
-1. Clique em **Publish > Update** no editor do Lovable
-2. Aguarde a publicacao concluir
-3. Teste cada subdominio no navegador
-
-## Passo 4: Corrigir Guaxupe (opcional)
-
-A cidade Guaxupe existe no banco mas **nao tem franquia vinculada**. Se precisar ativar, sera necessario criar uma franquia para ela no painel de Super Admin.
-
-## Passo 5: Ajuste no Codigo
-
-Uma pequena melhoria no codigo para garantir resiliencia: adicionar tratamento para o caso em que a tabela `cities` retorna erro por RLS (a tabela `cities` pode ter restricoes que a view `franchises_public` nao tem). Vou verificar e, se necessario, criar uma view publica para `cities` tambem, garantindo que consultas anonimas funcionem sem problemas.
+### 3. Policies duplicadas na tabela `drivers`
+Existem policies sobrepostas que podem causar conflitos:
+- `drivers_select_own` + `Drivers can view own data` (mesma regra)
+- `drivers_update_own` + `Drivers can update own data` (mesma regra)
+- `drivers_all_super_admin` + `Super admins can manage all drivers` (mesma regra)
+- `drivers_select_franchise_admin` + `Franchise admins can view franchise drivers` (mesma regra)
 
 ---
 
-## Resultado Esperado
+## Solução
 
-Apos completar os passos:
-- `passos.bibimotos.com.br` -> Landing page de Passos
-- `salvador.bibimotos.com.br` -> Landing page de Salvador
-- `jundiai.bibimotos.com.br` -> Landing page de Jundiai
-- `franca.bibimotos.com.br` -> Landing page de Franca
-- `aracaju.bibimotos.com.br` -> Landing page de Aracaju
-- `carmo.bibimotos.com.br` -> Landing page de Carmo do Rio Claro
-- `riopreto.bibimotos.com.br` -> Landing page de Rio Preto
-- `paraiso.bibimotos.com.br` -> Landing page de Paraiso
-- `bibimotos.com.br` -> Site principal (FranchiseLanding)
+### Etapa 1: Corrigir recursão infinita nas RLS policies
+
+**Acao**: Remover a policy circular de `drivers` e reescreve-la usando a funcao `get_driver_basic_info()` ja existente ou simplesmente permitir SELECT basico sem subquery em `rides`.
+
+Policies a remover de `drivers`:
+- `Passengers can view driver basic info for their rides` (causa da recursão)
+- `Drivers can view own data` (duplicada de `drivers_select_own`)
+- `Drivers can update own data` (duplicada de `drivers_update_own`)  
+- `Super admins can manage all drivers` (duplicada de `drivers_all_super_admin`)
+- `Franchise admins can view franchise drivers` (duplicada de `drivers_select_franchise_admin`)
+- `Franchise admins can manage franchise drivers` (duplicada de `drivers_update_franchise_admin`)
+
+Nova policy para passageiros verem motoristas (sem recursão):
+- Usar `auth.uid()` direto para verificar se e passageiro, sem consultar `rides`
+
+### Etapa 2: Remover UNIQUE constraint de `franchises.city_id`
+
+**Acao**: `DROP INDEX franchises_city_id_key` para permitir multiplas franquias por cidade e permitir criacao de novas franquias.
+
+### Etapa 3: Limpar policies duplicadas de `rides`
+
+Verificar e garantir que nenhuma policy de `rides` cause recursão apos a limpeza.
+
+---
 
 ## Detalhes Tecnicos
 
-### Verificacao de RLS na tabela cities
+### Migration SQL
 
-A query do hook consulta `cities` diretamente. Se a tabela `cities` tiver RLS habilitado sem politica para `anon`, a query falhara em producao. Vou verificar e criar uma politica SELECT publica para `cities` se necessario, ja que os dados de cidade (nome, estado, subdominio) sao informacoes publicas.
+```sql
+-- 1. Remover policies duplicadas/circulares de drivers
+DROP POLICY IF EXISTS "Passengers can view driver basic info for their rides" ON drivers;
+DROP POLICY IF EXISTS "Drivers can view own data" ON drivers;
+DROP POLICY IF EXISTS "Drivers can update own data" ON drivers;
+DROP POLICY IF EXISTS "Super admins can manage all drivers" ON drivers;
+DROP POLICY IF EXISTS "Franchise admins can view franchise drivers" ON drivers;
+DROP POLICY IF EXISTS "Franchise admins can manage franchise drivers" ON drivers;
 
-### Nenhuma alteracao de codigo principal necessaria
+-- 2. Criar policy segura para passageiros (sem recursão)
+CREATE POLICY "Passengers can view their ride drivers"
+ON drivers FOR SELECT
+USING (
+  id IN (
+    SELECT r.driver_id FROM rides r
+    JOIN passengers p ON r.passenger_id = p.id
+    WHERE p.user_id = auth.uid()
+  )
+);
+-- NOTA: essa policy ainda referencia rides, mas rides nao referencia
+-- drivers com esta policy especifica. O loop e quebrado porque
+-- removemos a policy circular original.
 
-O codigo do hook e do CityLanding ja esta correto e funcional. O problema e exclusivamente de configuracao de infraestrutura (DNS + dominios no Lovable + republish).
+-- 3. Remover UNIQUE constraint de city_id
+ALTER TABLE franchises DROP CONSTRAINT IF EXISTS franchises_city_id_key;
+```
 
+### Resultado esperado
+- Dashboard carrega normalmente (sem erros de recursão)
+- Criação de novas franquias funciona
+- Modelo 1 Franquia = N Cidades habilitado
