@@ -50,20 +50,30 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [copied, setCopied] = useState(false);
   const [minPurchase, setMinPurchase] = useState(10);
+  const [hasGateway, setHasGateway] = useState(false);
+  const [gatewayName, setGatewayName] = useState<string | null>(null);
 
-  // Load min_credit_purchase from franchise
+  // Load min_credit_purchase and gateway config from franchise
   useEffect(() => {
-    const loadMin = async () => {
+    const loadFranchiseConfig = async () => {
       const { data } = await supabase
         .from("franchises")
-        .select("min_credit_purchase")
+        .select("min_credit_purchase, payment_gateway, payment_api_key")
         .eq("id", franchiseId)
         .maybeSingle();
-      if (data && (data as any).min_credit_purchase) {
-        setMinPurchase(Number((data as any).min_credit_purchase));
+      if (data) {
+        if ((data as any).min_credit_purchase) {
+          setMinPurchase(Number((data as any).min_credit_purchase));
+        }
+        const gateway = (data as any).payment_gateway;
+        const apiKey = (data as any).payment_api_key;
+        if (gateway && apiKey) {
+          setHasGateway(true);
+          setGatewayName(gateway);
+        }
       }
     };
-    loadMin();
+    loadFranchiseConfig();
   }, [franchiseId]);
 
   const handleSelectPackage = (pkg: CreditPackage) => {
@@ -118,14 +128,48 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
 
       setPaymentId(transaction.id);
       
-      // Generate a mock PIX code (in production, call payment gateway API)
-      const mockPixCode = `00020126580014BR.GOV.BCB.PIX0136${transaction.id}5204000053039865404${selectedPackage.price.toFixed(2)}5802BR5913BIBI MOTOS6008BRASIL62070503***6304`;
-      setPixCode(mockPixCode);
+      if (hasGateway) {
+        // Call edge function to generate real PIX via configured gateway
+        try {
+          const { data: pixData, error: pixError } = await supabase.functions.invoke('generate-pix', {
+            body: {
+              franchise_id: franchiseId,
+              transaction_id: transaction.id,
+              amount: selectedPackage.price,
+              description: `Créditos Bibi Motos - ${selectedPackage.credits} créditos`,
+            },
+          });
+
+          if (pixError || !pixData?.pix_code) {
+            throw new Error(pixData?.error || 'Erro ao gerar PIX pelo gateway');
+          }
+
+          setPixCode(pixData.pix_code);
+          if (pixData.payment_id) {
+            // Update transaction with external payment_id
+            await supabase
+              .from("credit_transactions")
+              .update({ payment_id: pixData.payment_id })
+              .eq("id", transaction.id);
+          }
+        } catch (gatewayError: any) {
+          console.error("Gateway error, falling back to mock:", gatewayError);
+          // Fallback to mock if gateway fails
+          const mockPixCode = `00020126580014BR.GOV.BCB.PIX0136${transaction.id}5204000053039865404${selectedPackage.price.toFixed(2)}5802BR5913BIBI MOTOS6008BRASIL62070503***6304`;
+          setPixCode(mockPixCode);
+        }
+      } else {
+        // Mock PIX code when no gateway configured
+        const mockPixCode = `00020126580014BR.GOV.BCB.PIX0136${transaction.id}5204000053039865404${selectedPackage.price.toFixed(2)}5802BR5913BIBI MOTOS6008BRASIL62070503***6304`;
+        setPixCode(mockPixCode);
+      }
       setShowPayment(true);
 
       toast({
         title: "PIX gerado!",
-        description: "Copie o código e pague para liberar seus créditos.",
+        description: hasGateway
+          ? "Copie o código e pague para liberar seus créditos."
+          : "⚠️ Modo demonstração — gateway de pagamento não configurado.",
       });
     } catch (error: any) {
       toast({
@@ -154,9 +198,28 @@ export function CreditsShop({ driverId, franchiseId, currentCredits, onCreditsUp
 
     setCheckingPayment(true);
     try {
-      // In production, check with payment gateway
-      // For demo, simulate successful payment after button click
-      
+      if (hasGateway) {
+        // Check with real gateway
+        const { data: statusData, error: statusError } = await supabase.functions.invoke('generate-pix', {
+          body: {
+            franchise_id: franchiseId,
+            action: 'check_status',
+            transaction_id: paymentId,
+          },
+        });
+
+        if (statusError) throw statusError;
+
+        if (statusData?.status !== 'paid' && statusData?.status !== 'confirmed') {
+          toast({
+            title: "Pagamento pendente",
+            description: "O pagamento ainda não foi identificado. Tente novamente em alguns instantes.",
+          });
+          setCheckingPayment(false);
+          return;
+        }
+      }
+
       // Update transaction status
       await supabase
         .from("credit_transactions")

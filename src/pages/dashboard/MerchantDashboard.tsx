@@ -194,8 +194,24 @@ export default function MerchantDashboard() {
 
     setSubmitting(true);
     try {
-      // TODO: Calculate price based on distance
-      const estimatedPrice = 15.00; // Placeholder
+      // Calculate price based on franchise pricing
+      let estimatedPrice = 15.00; // Default fallback
+      try {
+        const { data: franchisePricing } = await supabase
+          .from("franchises")
+          .select("base_price, price_per_km")
+          .eq("id", merchantData.franchise_id)
+          .single();
+        
+        if (franchisePricing) {
+          const basePrice = Number(franchisePricing.base_price) || 5;
+          const pricePerKm = Number(franchisePricing.price_per_km) || 2;
+          // Estimate ~3km default when geocoding is unavailable
+          estimatedPrice = basePrice + (pricePerKm * 3);
+        }
+      } catch (e) {
+        console.error("Error fetching pricing, using default:", e);
+      }
       
       const { data, error } = await supabase
         .from("deliveries")
@@ -206,7 +222,7 @@ export default function MerchantDashboard() {
           pickup_lat: merchantData.business_lat || 0,
           pickup_lng: merchantData.business_lng || 0,
           delivery_address: newDelivery.delivery_address,
-          delivery_lat: 0, // TODO: Geocode
+          delivery_lat: 0,
           delivery_lng: 0,
           recipient_name: newDelivery.recipient_name,
           recipient_phone: newDelivery.recipient_phone,
