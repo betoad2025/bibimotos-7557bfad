@@ -61,18 +61,16 @@ export default function SuperAdminDashboard() {
         supabase.from("passengers").select("*", { count: "exact", head: true }),
         supabase.from("merchants").select("*", { count: "exact", head: true }),
         supabase.from("franchise_leads").select("*", { count: "exact", head: true }).eq("status", "new"),
-        supabase.from("rides").select("final_price").limit(1000),
+        supabase.from("rides").select("*", { count: "exact", head: true }),
         supabase.from("emergency_alerts").select("*", { count: "exact", head: true }).eq("status", "active"),
       ]);
-
-      const totalRevenue = ridesRes.data?.reduce((sum, r) => sum + (Number(r.final_price) || 0), 0) || 0;
 
       setStats({
         totalCities: citiesData?.length || 0,
         activeFranchises: franchisesData?.filter((f) => f.is_active).length || 0,
         totalDrivers: driversRes.count || 0,
-        totalRides: ridesRes.data?.length || 0,
-        totalRevenue,
+        totalRides: ridesRes.count || 0,
+        totalRevenue: 0,
         totalPassengers: passengersRes.count || 0,
         totalMerchants: merchantsRes.count || 0,
         pendingLeads: leadsRes.count || 0,
