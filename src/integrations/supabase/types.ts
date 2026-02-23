@@ -146,6 +146,59 @@ export type Database = {
         }
         Relationships: []
       }
+      city_marketing: {
+        Row: {
+          city_id: string
+          created_at: string
+          facebook_access_token: string | null
+          facebook_pixel_id: string | null
+          google_ads_conversion_id: string | null
+          google_ads_id: string | null
+          google_analytics_id: string | null
+          id: string
+          resend_api_key: string | null
+          taboola_pixel_id: string | null
+          tiktok_pixel_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          city_id: string
+          created_at?: string
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          google_ads_conversion_id?: string | null
+          google_ads_id?: string | null
+          google_analytics_id?: string | null
+          id?: string
+          resend_api_key?: string | null
+          taboola_pixel_id?: string | null
+          tiktok_pixel_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city_id?: string
+          created_at?: string
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          google_ads_conversion_id?: string | null
+          google_ads_id?: string | null
+          google_analytics_id?: string | null
+          id?: string
+          resend_api_key?: string | null
+          taboola_pixel_id?: string | null
+          tiktok_pixel_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_marketing_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: true
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_usages: {
         Row: {
           discount_applied: number
@@ -1453,6 +1506,7 @@ export type Database = {
           last_payment_date: string | null
           loyalty_enabled: boolean | null
           loyalty_rides_for_free: number | null
+          min_credit_purchase: number | null
           monthly_fee: number | null
           name: string
           next_billing_date: string | null
@@ -1495,6 +1549,7 @@ export type Database = {
           last_payment_date?: string | null
           loyalty_enabled?: boolean | null
           loyalty_rides_for_free?: number | null
+          min_credit_purchase?: number | null
           monthly_fee?: number | null
           name: string
           next_billing_date?: string | null
@@ -1537,6 +1592,7 @@ export type Database = {
           last_payment_date?: string | null
           loyalty_enabled?: boolean | null
           loyalty_rides_for_free?: number | null
+          min_credit_purchase?: number | null
           monthly_fee?: number | null
           name?: string
           next_billing_date?: string | null
