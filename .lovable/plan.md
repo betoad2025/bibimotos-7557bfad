@@ -1,79 +1,87 @@
 
 
-# Plano para Resolver Subdomínios das Cidades
+# Plano para Ativar Todos os Subdominios
 
-## Diagnóstico Confirmado
+## Situacao Atual
 
-Testes realizados durante a investigação:
+**Banco de dados** - Tudo OK:
+- 9 cidades cadastradas com subdominios
+- 8 franquias ativas vinculadas (Guaxupe nao tem franquia)
 
-1. **Banco de dados**: Todas as cidades (Salvador, Passos, etc.) existem com subdomínios corretos e franquias ativas vinculadas
-2. **API direta (anon key)**: Consultas a `cities` e `franchises_public` retornam dados corretamente
-3. **Preview (rota /cidade/salvador)**: Funciona 100% - landing page de Salvador carrega perfeitamente com dados corretos
-4. **Produção (salvador.bibimotos.com.br)**: Mostra "Cidade não encontrada" - a detecção de subdomínio funciona (mostra "salvador"), mas as queries falham
+**Codigo** - Tudo OK:
+- Hook `useFranchiseBySubdomain` detecta subdominios corretamente
+- Rota `/cidade/:subdomain` funciona como fallback
+- View `franchises_public` acessivel sem autenticacao
 
-## Causa Raiz
+**Problema real**: Os subdominios precisam ser adicionados manualmente nas configuracoes de dominio do projeto Lovable, e o app precisa ser **republicado** para que o codigo atualizado funcione nos dominios customizados.
 
-A versao publicada do frontend provavelmente esta desatualizada. As alteracoes recentes no hook `useFranchiseBySubdomain` (mudanca de `franchises` para `franchises_public`) precisam ser republicadas. Alem disso, o codigo atual nao tem tratamento robusto de erros, dificultando o diagnostico.
+---
 
-## Plano de Implementacao
+## Passo 1: Adicionar Todos os Subdominios no Lovable
 
-### Passo 1: Melhorar Tratamento de Erros no Hook
+Nas configuracoes do projeto (Settings > Domains), adicionar cada um destes subdominios:
 
-Atualizar `src/hooks/useFranchiseBySubdomain.ts` para:
-- Adicionar `console.error` detalhado em cada ponto de falha (qual query falhou, qual erro exato do Supabase)
-- Diferenciar entre "cidade nao encontrada" e "franquia nao encontrada" 
-- Isso permitira diagnosticar rapidamente se o problema persiste apos republish
+| Subdominio | Cidade |
+|---|---|
+| `passos.bibimotos.com.br` | Passos - MG |
+| `salvador.bibimotos.com.br` | Salvador - BA |
+| `jundiai.bibimotos.com.br` | Jundiai - SP |
+| `franca.bibimotos.com.br` | Franca - SP |
+| `aracaju.bibimotos.com.br` | Aracaju - SE |
+| `carmo.bibimotos.com.br` | Carmo do Rio Claro - MG |
+| `riopreto.bibimotos.com.br` | Sao Jose do Rio Preto - SP |
+| `paraiso.bibimotos.com.br` | Sao Sebastiao do Paraiso - MG |
 
-### Passo 2: Adicionar Fallback Robusto no CityLanding
+**IMPORTANTE**: Nenhum subdominio deve ser marcado como "Primary". Apenas `bibimotos.com.br` deve ser o Primary. Marcar um subdominio como Primary causa redirecionamento 301 automatico que quebra tudo.
 
-Atualizar `src/pages/CityLanding.tsx` para:
-- Na tela de erro, mostrar um botao "Tentar Novamente" que recarrega a pagina
-- Mostrar mensagem de erro mais detalhada em modo debug (via console)
+## Passo 2: Configurar DNS no Cloudflare
 
-### Passo 3: Republicar o App
+Para cada subdominio acima, criar um registro A no Cloudflare:
 
-Apos as alteracoes de codigo, o usuario precisara clicar em **Publish > Update** para que as mudancas entrem em vigor nos subdominios customizados. Mudancas frontend so ficam ativas nos dominios customizados apos republish.
+- **Tipo**: A
+- **Nome**: o subdominio (ex: `passos`, `salvador`, `jundiai`, etc.)
+- **Valor**: `185.158.133.1`
+- **Proxy**: **DNS only** (nuvem cinza - NAO usar proxy laranja)
 
-## Detalhes Tecnicos
+Se voce ja tem um registro wildcard (`*`) apontando para `185.158.133.1`, os registros DNS ja estao cobertos. Mas cada subdominio ainda precisa ser adicionado individualmente no painel do Lovable (Passo 1).
 
-### Hook atualizado (useFranchiseBySubdomain.ts)
+## Passo 3: Republicar o App
 
-```typescript
-// Adicionar logs de debug em cada ponto de falha:
-const { data: cityData, error: cityError } = await supabase
-  .from('cities')
-  .select('id, name, state, subdomain')
-  .eq('subdomain', subdomain)
-  .eq('is_active', true)
-  .single();
+Apos adicionar todos os subdominios:
+1. Clique em **Publish > Update** no editor do Lovable
+2. Aguarde a publicacao concluir
+3. Teste cada subdominio no navegador
 
-if (cityError) {
-  console.error('[CityLanding] Erro ao buscar cidade:', cityError);
-  // ...
-}
+## Passo 4: Corrigir Guaxupe (opcional)
 
-const { data: franchiseData, error: franchiseError } = await supabase
-  .from('franchises_public')
-  .select('id, name, city_id, is_active, base_price, price_per_km')
-  .eq('city_id', cityData.id)
-  .eq('is_active', true)
-  .single();
+A cidade Guaxupe existe no banco mas **nao tem franquia vinculada**. Se precisar ativar, sera necessario criar uma franquia para ela no painel de Super Admin.
 
-if (franchiseError) {
-  console.error('[CityLanding] Erro ao buscar franquia:', franchiseError);
-  // ...
-}
-```
+## Passo 5: Ajuste no Codigo
 
-### CityLanding.tsx - Botao de retry
+Uma pequena melhoria no codigo para garantir resiliencia: adicionar tratamento para o caso em que a tabela `cities` retorna erro por RLS (a tabela `cities` pode ter restricoes que a view `franchises_public` nao tem). Vou verificar e, se necessario, criar uma view publica para `cities` tambem, garantindo que consultas anonimas funcionem sem problemas.
 
-Adicionar botao "Tentar Novamente" na tela de erro para que o usuario possa recarregar sem precisar digitar a URL novamente.
+---
 
 ## Resultado Esperado
 
-Apos implementar as mudancas e republicar:
-- `salvador.bibimotos.com.br` -> Landing page de Salvador
+Apos completar os passos:
 - `passos.bibimotos.com.br` -> Landing page de Passos
-- `bibimotos.com.br/cidade/salvador` -> Landing page de Salvador (fallback)
-- Console do navegador mostrara logs detalhados para diagnostico caso ainda haja problemas
+- `salvador.bibimotos.com.br` -> Landing page de Salvador
+- `jundiai.bibimotos.com.br` -> Landing page de Jundiai
+- `franca.bibimotos.com.br` -> Landing page de Franca
+- `aracaju.bibimotos.com.br` -> Landing page de Aracaju
+- `carmo.bibimotos.com.br` -> Landing page de Carmo do Rio Claro
+- `riopreto.bibimotos.com.br` -> Landing page de Rio Preto
+- `paraiso.bibimotos.com.br` -> Landing page de Paraiso
+- `bibimotos.com.br` -> Site principal (FranchiseLanding)
+
+## Detalhes Tecnicos
+
+### Verificacao de RLS na tabela cities
+
+A query do hook consulta `cities` diretamente. Se a tabela `cities` tiver RLS habilitado sem politica para `anon`, a query falhara em producao. Vou verificar e criar uma politica SELECT publica para `cities` se necessario, ja que os dados de cidade (nome, estado, subdominio) sao informacoes publicas.
+
+### Nenhuma alteracao de codigo principal necessaria
+
+O codigo do hook e do CityLanding ja esta correto e funcional. O problema e exclusivamente de configuracao de infraestrutura (DNS + dominios no Lovable + republish).
 
