@@ -1,141 +1,163 @@
 
+# Auditoria Completa + Plano de Producao 100%
 
-# Overhaul Completo: Marketing por Cidade + Visual Cinematografico Premium
+## Diagnostico: O Que Esta Funcionando vs Quebrado
 
-## Parte 1: Marketing Pixels por Cidade no Super Admin
+### FUNCIONANDO (com ressalvas)
+| Funcionalidade | Status | Observacao |
+|---|---|---|
+| Login/Logout | OK | Autenticacao Supabase funcionando |
+| Landing Franquia (`FranchiseLanding.tsx`) | OK | Formulario de leads salva em `franchise_leads` |
+| Landing Cidade (`CityLanding.tsx`) | OK | Carrega franquia por subdomain, injeta pixels |
+| Dashboard Super Admin - Sidebar | OK | Navegacao vertical correta |
+| Dashboard Super Admin - Stats | OK | Contadores funcionando |
+| Dashboard Super Admin - Cidades | OK | CRUD com abas (Dados/Operacional/Marketing) |
+| Dashboard Super Admin - Franquias | OK | Listagem e gerenciamento |
+| Dashboard Super Admin - Usuarios | OK | Listagem com roles |
+| Dashboard Super Admin - Leads | OK | Gerenciamento de leads |
+| Dashboard Super Admin - Billing | OK | Faturamento de franquias |
+| Dashboard Super Admin - Monitoramento | OK | Tabela de corridas ativas em tempo real |
+| Dashboard Super Admin - Emergencias | OK | Alertas SOS |
+| Dashboard Franqueado - Stats | OK | Metricas da franquia |
+| Dashboard Franqueado - Motoristas | OK | Aprovacao/listagem |
+| Dashboard Motorista - Perfil | OK | Dados do motorista |
+| Dashboard Motorista - Online/Offline | OK | Toggle com validacao de creditos |
+| Dashboard Motorista - Creditos | OK | Loja de creditos com PIX mock |
+| Dashboard Lojista | OK | CRUD de entregas |
+| Completar Cadastro | OK | Upload de documentos KYC |
 
-### Problema
-O formulario de cidades no painel Super Admin so tem campos basicos (nome, estado, subdomain, lat/lng). Faltam:
-- Pixels de marketing (Facebook/Meta, Google Ads, Google Analytics, TikTok, Taboola)
-- Chave de API do gateway de pagamento
-- Valor minimo de recarga do motorista
-- Eventos de conversao automaticos (motorista primeira recarga, passageiro cadastro, primeira corrida)
+### PROBLEMAS CRITICOS (Precisam corrigir)
 
-### Solucao
+| # | Problema | Impacto | Onde |
+|---|---|---|---|
+| 1 | **Registro nao salva role do usuario** | Usuario cadastra como "Motoboy" mas o `userType` nao e salvo. Resultado: cai na tela de "Cadastro em analise" sem nunca ser vinculado a uma franquia | `Register.tsx` linha 62 |
+| 2 | **Registro nao vincula usuario a cidade/franquia** | Passageiros e motoristas nao sao criados nas tabelas `passengers`/`drivers` automaticamente. Ficam "orfaos" | `Register.tsx` |
+| 3 | **Botao "Solicitar Corrida" no Hero nao faz nada** | CTA principal da landing sem acao (sem `onClick` ou `Link`) | `Hero.tsx` linha 44 |
+| 4 | **Botao "Seja um Motoboy" no Hero nao faz nada** | Segundo CTA sem link | `Hero.tsx` linha 48 |
+| 5 | **Botao "Quero ser franqueado" na secao Franchise nao faz nada** | Sem `onClick` ou link para formulario de contato | `Franchise.tsx` linha 59 |
+| 6 | **Parametro `?role=` da URL ignorado no Register** | Links da CityLanding apontam para `/register` mas o formulario nao le o parametro | `Register.tsx` |
+| 7 | **Dashboard Passageiro sem dados quando usuario novo** | Se `passengers` nao tem registro, mostra "Carregando..." infinito | `PassengerDashboard.tsx` linha 198-204 |
+| 8 | **CreditsShop usa PIX mock** | `handleCheckPayment` simula pagamento e confirma imediatamente sem gateway real | `CreditsShop.tsx` linha 152 |
+| 9 | **Graficos do Franqueado usam dados estaticos** | `chartData`, `hourlyData`, `serviceTypeData` sao hardcoded, nao vem do banco | `FranchiseAdminDashboard.tsx` linhas 130-156 |
+| 10 | **Google Maps depende de chave configurada** | `useGoogleMaps` chama edge function `geocode`. Chave `GOOGLE_MAPS_API_KEY` esta configurada, mas autocomplete pode falhar se a API nao estiver habilitada | `useGoogleMaps.ts` |
+| 11 | **Franqueado nao tem filtro por cidade** | Dashboard do franqueado busca `franchises.owner_id = user.id` mas retorna so 1 franquia (`.maybeSingle()`) -- franqueados multi-cidade perdem dados | `FranchiseAdminDashboard.tsx` linha 67 |
+| 12 | **Delivery price hardcoded** | Preco de entrega do lojista e fixo R$15 sem calculo real | `MerchantDashboard.tsx` linha 198 |
+| 13 | **Nenhuma validacao de dados no CompleteRegistration** | Campos obrigatorios (CPF, telefone) nao sao validados antes do submit | `CompleteRegistration.tsx` |
+| 14 | **Storage bucket 'documents' pode nao existir** | Upload de documentos KYC falha se bucket nao foi criado | `CompleteRegistration.tsx` linha 68 |
 
-#### 1. Migracao de Banco de Dados
-Atualmente, o marketing fica na tabela `franchise_marketing` (por franquia). Como o modelo e multi-tenant onde uma franquia pode ter multiplas cidades, os pixels precisam ser por **cidade** (cada cidade pode ter campanhas diferentes).
+---
 
-Criar tabela `city_marketing`:
+## Plano de Implementacao
 
+### Fase 1: Fluxo de Registro Completo (Critico)
+
+**Objetivo**: Quando um usuario se cadastra, ele deve:
+1. Escolher seu papel (Passageiro/Motoboy/Lojista)
+2. Ser vinculado automaticamente a uma franquia/cidade
+3. Receber a role correta na tabela `user_roles`
+4. Ter o registro criado na tabela apropriada (`passengers`/`drivers`/`merchants`)
+
+**Arquivos modificados**:
+- `src/pages/Register.tsx` - Salvar `userType` nos metadados do signup, ler `?role=` da URL, redirecionar para `/complete-registration` apos sucesso
+- **Novo trigger SQL** (`handle_new_user`) - Ao criar perfil, ler `raw_user_meta_data.user_type` e:
+  - Inserir role em `user_roles`
+  - Criar registro em `passengers`/`drivers`/`merchants` vinculado a franquia da cidade de origem (se informada via `raw_user_meta_data.city_id`)
+- `src/pages/CompleteRegistration.tsx` - Adicionar validacao de campos obrigatorios
+
+**Novo: Trigger `on_auth_user_created`**:
 ```text
-city_marketing
-  id             uuid (PK)
-  city_id        uuid (FK -> cities.id)
-  facebook_pixel_id       text
-  facebook_access_token   text
-  google_ads_id           text
-  google_ads_conversion_id text
-  google_analytics_id     text
-  tiktok_pixel_id         text
-  taboola_pixel_id        text  (NOVO - nao existia antes)
-  resend_api_key          text  (NOVO)
-  created_at     timestamptz
-  updated_at     timestamptz
+1. Le user_metadata (user_type, city_id)
+2. Cria profile em profiles
+3. Insere role em user_roles
+4. Se passenger: insere em passengers (com franchise_id da cidade)
+5. Se driver: insere em drivers (com franchise_id, is_approved=false)
+6. Se merchant: insere em merchants (com franchise_id, is_approved=false)
 ```
 
-Adicionar `min_credit_purchase` na tabela `franchises` (valor minimo de recarga do motoboy).
+### Fase 2: CTAs e Links Funcionais
 
-RLS: Super admins podem tudo. Franchise owners podem ver/editar marketing das cidades de suas franquias.
+**Arquivos modificados**:
+- `src/components/landing/Hero.tsx` - "Solicitar Corrida" linka para `/register?role=passenger`, "Seja um Motoboy" linka para `/register?role=driver`
+- `src/components/landing/Franchise.tsx` - "Quero ser franqueado" faz scroll para secao de contato ou abre formulario de lead
+- `src/pages/CityLanding.tsx` - Garantir que todos os CTAs preservem o `city_id` como parametro na URL de registro
 
-#### 2. Refatorar `CitiesManagement.tsx`
-Expandir o dialog de editar cidade com abas:
-- **Aba "Dados"**: Nome, estado, subdomain, populacao, lat/lng (atual)
-- **Aba "Operacional"**: Gateway de pagamento, chave API (com toggle mostrar/ocultar), webhook URL, preco base, preco por km, debito por corrida, recarga minima
-- **Aba "Marketing"**: Campos de pixel para cada plataforma (Facebook, Google Ads, GA4, TikTok, Taboola, Resend) com status "Configurado/Pendente" visual
+### Fase 3: Dashboard do Franqueado - Multi-Cidade + Dados Reais
 
-Ao salvar, atualiza 3 tabelas: `cities`, `franchises` (vinculada), e `city_marketing`.
+**Problema**: Franqueado com multiplas cidades ve so uma. Graficos sao mockados.
 
-#### 3. Injetar Pixels na Pagina da Cidade (`CityLanding.tsx`)
-Buscar os pixels da `city_marketing` e injetar dinamicamente no `<head>`:
-- Facebook Pixel via `fbq()`
-- Google Ads/GA4 via `gtag()`
-- TikTok Pixel via `ttq`
-- Taboola via snippet nativo
+**Arquivos modificados**:
+- `src/pages/dashboard/FranchiseAdminDashboard.tsx`:
+  - Buscar TODAS as franquias do owner (`.select().eq('owner_id', user.id)`)
+  - Adicionar seletor de cidade no topo
+  - Substituir `chartData` hardcoded por query real agrupada por dia da semana
+  - Substituir `hourlyData` por query real agrupada por hora
+  - Substituir `serviceTypeData` por query real contando `service_type` das rides
 
-#### 4. Eventos de Conversao Automaticos
-Criar um hook `useConversionTracking` que dispara eventos nos momentos-chave:
+### Fase 4: Dashboard Passageiro - Estado Vazio
 
-| Momento | Evento Facebook | Evento Google | Quem |
-|---------|----------------|---------------|------|
-| Cadastro completo | `CompleteRegistration` | `sign_up` | Todos |
-| Primeira recarga do motoboy | `Purchase` | `purchase` | Motorista |
-| Primeira corrida do passageiro | `Purchase` | `purchase` | Passageiro |
-| Cadastro do lojista | `Lead` | `generate_lead` | Lojista |
-| Inicio de cadastro | `InitiateCheckout` | `begin_checkout` | Todos |
+**Arquivos modificados**:
+- `src/pages/dashboard/PassengerDashboard.tsx`:
+  - Se `passengerData` e null apos o fetch, mostrar tela de boas-vindas com CTA para completar cadastro (em vez de "Carregando..." infinito)
+  - Mesma logica para DriverDashboard e MerchantDashboard
 
-#### 5. Atualizar `CreditsShop.tsx`
-Respeitar `min_credit_purchase` da franquia e bloquear recargas abaixo do minimo.
+### Fase 5: Integracao de Pagamento Real (CreditsShop)
 
----
+**Situacao atual**: O PIX gerado e falso. O botao "Ja paguei" confirma imediatamente.
 
-## Parte 2: Overhaul Visual Cinematografico
+**Solucao**:
+- Manter fluxo mock funcional como fallback (quando gateway nao configurado)
+- Quando `franchise.payment_api_key` existe, chamar edge function que integra com Asaas/Woovi para gerar PIX real
+- Verificar pagamento via webhook ou polling
 
-### Problema
-As paginas (landing principal e pagina da cidade) estao "pobrezinhas" sem imagens e sem o impacto visual de plataformas como Uber e 99. As imagens geradas anteriormente parecem nao estar aparecendo ou o visual nao esta no nivel desejado.
+**Arquivos modificados**:
+- `src/components/driver/CreditsShop.tsx` - Verificar se franquia tem gateway configurado; se sim, chamar edge function; se nao, manter mock com aviso
+- Criar/atualizar edge function `generate-pix` para integracao real
 
-### Ciencia da Comunicacao (Uber/99)
-A estrategia visual dessas plataformas se baseia em:
-1. **Pessoas reais em acao** - rostos, sorrisos, interacao humana
-2. **Cenarios urbanos reconheciveis** - ruas movimentadas, cidade viva
-3. **Hierarquia visual clara** - headline grande, imagem dominante, CTA contrastante
-4. **Secoes alternadas** - imagem/texto lado a lado, alternando esquerda/direita
-5. **Prova social** - numeros, depoimentos, badges de confianca
-6. **Movimento implicito** - fotos com blur de velocidade, angulos dinamicos
+### Fase 6: Calculo de Preco de Entrega
 
-### Plano Visual
+**Arquivos modificados**:
+- `src/pages/dashboard/MerchantDashboard.tsx` - Usar `useRideService.calculatePrice()` em vez do preco fixo de R$15
 
-#### Landing Principal (`Index.tsx` e componentes)
+### Fase 7: Validacoes e Storage
 
-**Hero** - Regenerar imagem hero com foco em: motociclista Bibi Motos com passageiro sorridente em avenida movimentada brasileira, paleta roxo/dourado, golden hour.
+- Criar storage bucket `documents` se nao existir (migracao SQL)
+- `src/pages/CompleteRegistration.tsx` - Validar CPF/CNPJ/telefone antes de permitir avancar nos steps
+- Adicionar mascara de input para CPF, CNPJ, telefone, CEP
 
-**Services** - 3 cards com imagens distintas:
-- Corridas: passageira sorridente na garupa
-- Entregas: entregador com caixa de delivery
-- Farmacia: entregador com sacola de farmacia
+### Fase 8: Isolamento de Dados por Cidade
 
-**How It Works** - Imagem lateral mostrando mao segurando celular com app aberto, cidade ao fundo desfocada.
+**Garantir que**:
+- Creditos comprados por motoristas sao contabilizados por franquia (ja existe `franchise_id` em `credit_transactions`)
+- Dashboard do franqueado filtra tudo por `franchise_id` (ja funciona parcialmente)
+- Super Admin ve dados agregados de todas as franquias (ja funciona)
+- Um lojista de uma cidade nao veja dados de outra cidade (RLS ja garante via `franchise_id`)
 
-**Franchise** - Empresario sorridente com tablet, graficos de crescimento ao fundo, ambiente de escritorio moderno.
-
-**Seções novas sugeridas**:
-- **Depoimentos** - Cards com foto de avatar + citacao (estilo Uber)
-- **Download App** - Mockup de celular com QR code
-
-#### Pagina da Cidade (`CityLanding.tsx`)
-Aplicar o mesmo padrao visual da landing principal mas contextualizado para a cidade. Adicionar secao de "Numeros da cidade" com contadores animados.
-
-#### Geracoes de Imagens
-Gerar 6-8 novas imagens cinematograficas de alta qualidade usando o modelo de imagem, todas com:
-- Iluminacao dramatica (golden hour ou neon noturno)
-- Paleta roxo/dourado consistente
-- Pessoas brasileiras em cenarios urbanos
-- Foco em emocao e conexao humana
+**Verificacao**: Auditar todas as queries em dashboards para confirmar que filtram por `franchise_id` corretamente -- atualmente parece correto.
 
 ---
 
-## Arquivos Modificados
+## Resumo de Arquivos a Modificar
 
 | Arquivo | Alteracao |
-|---------|----------|
-| Migracao SQL | Criar `city_marketing`, adicionar `min_credit_purchase` em `franchises` |
-| `src/components/superadmin/CitiesManagement.tsx` | Adicionar abas com campos operacionais e marketing |
-| `src/pages/CityLanding.tsx` | Injetar pixels dinamicamente, melhorar visual |
-| `src/hooks/useConversionTracking.ts` | NOVO - hook para disparar eventos de conversao |
-| `src/components/landing/Hero.tsx` | Regenerar hero cinematografico |
-| `src/components/landing/Services.tsx` | Melhorar cards com imagens mais impactantes |
-| `src/components/landing/HowItWorks.tsx` | Layout mais dinamico |
-| `src/components/landing/Franchise.tsx` | Secao mais impactante com prova social |
-| `src/components/landing/Navbar.tsx` | Usar logo oficial, ajustes visuais |
-| `src/components/driver/CreditsShop.tsx` | Validar recarga minima |
-| 6-8 novas imagens em `src/assets/` | Geradas via AI com padrao cinematografico |
+|---|---|
+| Migracao SQL | Trigger `on_auth_user_created`, storage bucket `documents` |
+| `src/pages/Register.tsx` | Ler `?role=`, salvar `userType` e `city_id` nos metadados |
+| `src/components/landing/Hero.tsx` | Links funcionais nos CTAs |
+| `src/components/landing/Franchise.tsx` | Link funcional no CTA |
+| `src/pages/CityLanding.tsx` | Passar `city_id` nos links de registro |
+| `src/pages/dashboard/FranchiseAdminDashboard.tsx` | Multi-cidade + graficos reais |
+| `src/pages/dashboard/PassengerDashboard.tsx` | Estado vazio amigavel |
+| `src/pages/dashboard/DriverDashboard.tsx` | Estado vazio amigavel |
+| `src/pages/dashboard/MerchantDashboard.tsx` | Calculo de preco real + estado vazio |
+| `src/components/driver/CreditsShop.tsx` | Detectar gateway real vs mock |
+| `src/pages/CompleteRegistration.tsx` | Validacoes + mascaras |
 
-## Sequencia de Implementacao
-1. Migracao do banco (tabela `city_marketing` + coluna `min_credit_purchase`)
-2. Gerar todas as imagens cinematograficas em paralelo
-3. Refatorar `CitiesManagement.tsx` com abas completas
-4. Criar hook `useConversionTracking`
-5. Injetar pixels em `CityLanding.tsx`
-6. Overhaul visual de todos os componentes da landing
-7. Atualizar `CreditsShop.tsx` com validacao de minimo
-
+## Sequencia de Execucao
+1. Migracao SQL (trigger + storage)
+2. Register.tsx (fluxo de registro completo)
+3. CTAs das landings (Hero, Franchise, CityLanding)
+4. Dashboards (Passageiro, Motorista, Lojista - estados vazios)
+5. FranchiseAdminDashboard (multi-cidade + graficos reais)
+6. CreditsShop (deteccao de gateway)
+7. MerchantDashboard (calculo de preco)
+8. CompleteRegistration (validacoes)
