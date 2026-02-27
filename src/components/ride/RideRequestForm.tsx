@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { useRideService } from '@/hooks/useRideService';
-import { Loader2, Search, Bike, Package, Pill } from 'lucide-react';
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Search, Bike, Package, Pill, MapPin, Navigation, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -15,6 +18,13 @@ interface Location {
   lat: number;
   lng: number;
   address: string;
+}
+
+interface CityInfo {
+  lat: number;
+  lng: number;
+  name: string;
+  state: string;
 }
 
 interface RideRequestFormProps {
@@ -29,6 +39,20 @@ const SERVICE_TYPES: { value: ServiceType; label: string; icon: React.ElementTyp
   { value: 'delivery', label: 'Entrega', icon: Package, description: 'Envio de pacotes' },
   { value: 'pharmacy', label: 'Farmácia', icon: Pill, description: 'Entrega de medicamentos' },
 ];
+
+const CITY_RADIUS_KM = 30;
+
+// Haversine distance in km
+function haversineDistance(p1: { lat: number; lng: number }, p2: { lat: number; lng: number }): number {
+  const R = 6371;
+  const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+  const dLon = (p2.lng - p1.lng) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export function RideRequestForm({
   franchiseId,
@@ -46,12 +70,74 @@ export function RideRequestForm({
   const [distance, setDistance] = useState<number | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [calculating, setCalculating] = useState(false);
+  const [cityInfo, setCityInfo] = useState<CityInfo | null>(null);
+  const [originOutOfBounds, setOriginOutOfBounds] = useState(false);
+  const [destinationOutOfBounds, setDestinationOutOfBounds] = useState(false);
+  const [autoLocating, setAutoLocating] = useState(false);
 
   const { loading, calculatePrice, createRide } = useRideService();
+  const { getCurrentLocation, reverseGeocode } = useGoogleMaps();
 
-  // Calculate price when both addresses are set
+  // Fetch city info for this franchise
   useEffect(() => {
-    if (origin && destination) {
+    const fetchCityInfo = async () => {
+      const { data: franchise } = await supabase
+        .from('franchises')
+        .select('cities(name, state, lat, lng)')
+        .eq('id', franchiseId)
+        .single();
+
+      if (franchise?.cities) {
+        const city = franchise.cities as unknown as CityInfo;
+        if (city.lat && city.lng) {
+          setCityInfo(city);
+        }
+      }
+    };
+    fetchCityInfo();
+  }, [franchiseId]);
+
+  // Auto-detect location on mount
+  useEffect(() => {
+    if (!cityInfo) return;
+
+    const autoDetect = async () => {
+      setAutoLocating(true);
+      try {
+        const coords = await getCurrentLocation();
+        if (coords) {
+          const dist = haversineDistance(coords, { lat: cityInfo.lat, lng: cityInfo.lng });
+          if (dist <= CITY_RADIUS_KM) {
+            const address = await reverseGeocode(coords.lat, coords.lng);
+            if (address) {
+              setOriginText(address);
+              setOrigin({ ...coords, address });
+              setOriginOutOfBounds(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.log('Auto-detect location failed:', err);
+      } finally {
+        setAutoLocating(false);
+      }
+    };
+    autoDetect();
+  }, [cityInfo, getCurrentLocation, reverseGeocode]);
+
+  // Validate location is within city bounds
+  const validateBounds = useCallback((loc: Location, type: 'origin' | 'destination') => {
+    if (!cityInfo) return true;
+    const dist = haversineDistance(loc, { lat: cityInfo.lat, lng: cityInfo.lng });
+    const outOfBounds = dist > CITY_RADIUS_KM;
+    if (type === 'origin') setOriginOutOfBounds(outOfBounds);
+    else setDestinationOutOfBounds(outOfBounds);
+    return !outOfBounds;
+  }, [cityInfo]);
+
+  // Calculate price when both addresses are set and valid
+  useEffect(() => {
+    if (origin && destination && !originOutOfBounds && !destinationOutOfBounds) {
       setCalculating(true);
       calculatePrice(franchiseId, origin, destination)
         .then((result) => {
@@ -67,10 +153,40 @@ export function RideRequestForm({
       setDistance(null);
       setDuration(null);
     }
-  }, [origin, destination, franchiseId, calculatePrice]);
+  }, [origin, destination, franchiseId, calculatePrice, originOutOfBounds, destinationOutOfBounds]);
+
+  const handleOriginSelect = (loc: Location) => {
+    setOrigin(loc);
+    setOriginText(loc.address);
+    validateBounds(loc, 'origin');
+  };
+
+  const handleDestinationSelect = (loc: Location) => {
+    setDestination(loc);
+    setDestinationText(loc.address);
+    validateBounds(loc, 'destination');
+  };
+
+  const handleUseMyLocation = async () => {
+    setAutoLocating(true);
+    try {
+      const coords = await getCurrentLocation();
+      if (coords) {
+        const address = await reverseGeocode(coords.lat, coords.lng);
+        if (address) {
+          const loc = { ...coords, address };
+          setOriginText(address);
+          setOrigin(loc);
+          validateBounds(loc, 'origin');
+        }
+      }
+    } finally {
+      setAutoLocating(false);
+    }
+  };
 
   const handleSubmit = async () => {
-    if (!origin || !destination) return;
+    if (!origin || !destination || originOutOfBounds || destinationOutOfBounds) return;
 
     const rideId = await createRide({
       franchiseId,
@@ -86,7 +202,8 @@ export function RideRequestForm({
     }
   };
 
-  const canSubmit = origin && destination && !loading && !calculating;
+  const canSubmit = origin && destination && !loading && !calculating && !originOutOfBounds && !destinationOutOfBounds;
+  const anyOutOfBounds = originOutOfBounds || destinationOutOfBounds;
 
   return (
     <Card className={cn('border-2', className)}>
@@ -95,6 +212,12 @@ export function RideRequestForm({
           <Search className="h-5 w-5 text-primary" />
           Para onde você vai?
         </CardTitle>
+        {cityInfo && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            Área de cobertura: {cityInfo.name} - {cityInfo.state}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Service Type Selection */}
@@ -131,15 +254,38 @@ export function RideRequestForm({
           <AddressAutocomplete
             value={originText}
             onChange={setOriginText}
-            onSelect={(loc) => {
-              setOrigin(loc);
-              setOriginText(loc.address);
-            }}
+            onSelect={handleOriginSelect}
             placeholder="Onde você está?"
             icon="origin"
             showCurrentLocation
+            cityBias={cityInfo}
           />
+          {originOutOfBounds && (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Endereço fora da área de cobertura de {cityInfo?.name}
+            </p>
+          )}
         </div>
+
+        {/* Use my location button */}
+        {!origin && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleUseMyLocation}
+            disabled={autoLocating}
+          >
+            {autoLocating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Navigation className="h-4 w-4 mr-2" />
+            )}
+            Usar minha localização atual
+          </Button>
+        )}
 
         {/* Destination Input */}
         <div className="space-y-2">
@@ -147,14 +293,28 @@ export function RideRequestForm({
           <AddressAutocomplete
             value={destinationText}
             onChange={setDestinationText}
-            onSelect={(loc) => {
-              setDestination(loc);
-              setDestinationText(loc.address);
-            }}
+            onSelect={handleDestinationSelect}
             placeholder="Para onde você vai?"
             icon="destination"
+            cityBias={cityInfo}
           />
+          {destinationOutOfBounds && (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Endereço fora da área de cobertura de {cityInfo?.name}
+            </p>
+          )}
         </div>
+
+        {/* Out of bounds alert */}
+        {anyOutOfBounds && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Endereço fora da área de cobertura. O serviço está disponível apenas na região de {cityInfo?.name} - {cityInfo?.state}.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Promo Code */}
         <div className="space-y-2">

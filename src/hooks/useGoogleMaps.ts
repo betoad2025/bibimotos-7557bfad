@@ -92,14 +92,25 @@ export function useGoogleMaps() {
     }
   }, []);
 
-  const autocomplete = useCallback(async (input: string, sessionToken?: string): Promise<AutocompleteResult[]> => {
+  const autocomplete = useCallback(async (
+    input: string, 
+    sessionToken?: string,
+    locationBias?: { lat: number; lng: number; radius: number }
+  ): Promise<AutocompleteResult[]> => {
     if (input.length < 3) return [];
     
     setLoading(true);
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke('geocode', {
-        body: { action: 'autocomplete', input, sessionToken },
+        body: { 
+          action: 'autocomplete', 
+          input, 
+          sessionToken,
+          locationLat: locationBias?.lat,
+          locationLng: locationBias?.lng,
+          locationRadius: locationBias?.radius,
+        },
       });
 
       if (fnError) throw fnError;
