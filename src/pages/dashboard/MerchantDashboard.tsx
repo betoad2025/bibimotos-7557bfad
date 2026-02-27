@@ -72,6 +72,7 @@ export default function MerchantDashboard() {
   const { toast } = useToast();
   
   const [merchantData, setMerchantData] = useState<MerchantData | null>(null);
+  const [cityInfo, setCityInfo] = useState<{ name: string; state: string } | null>(null);
   const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
   const [stats, setStats] = useState({
     totalDeliveries: 0,
@@ -110,6 +111,18 @@ export default function MerchantDashboard() {
       
       if (merchant) {
         setMerchantData(merchant);
+
+        // Fetch city info
+        const { data: franchise } = await supabase
+          .from('franchises')
+          .select('cities(name, state)')
+          .eq('id', merchant.franchise_id)
+          .single();
+        
+        if (franchise?.cities) {
+          const city = franchise.cities as unknown as { name: string; state: string };
+          setCityInfo(city);
+        }
         
         // Fetch deliveries
         const { data: deliveriesData } = await supabase
@@ -324,8 +337,16 @@ export default function MerchantDashboard() {
           <div className="flex items-center gap-3">
             <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
             <div>
-              <h1 className="font-bold text-primary">Bibi Motos</h1>
-              <p className="text-xs text-muted-foreground">Entregas</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                {cityInfo && (
+                  <>
+                    <MapPin className="h-3 w-3" />
+                    <span>{cityInfo.name} - {cityInfo.state}</span>
+                    <span className="mx-0.5">•</span>
+                  </>
+                )}
+                Entregas
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4">

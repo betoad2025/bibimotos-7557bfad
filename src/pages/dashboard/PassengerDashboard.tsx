@@ -36,6 +36,7 @@ export default function PassengerDashboard() {
   const { rateRide, completeRide } = useRideService();
   
   const [passengerData, setPassengerData] = useState<PassengerData | null>(null);
+  const [cityInfo, setCityInfo] = useState<{ name: string; state: string } | null>(null);
   const [currentRideId, setCurrentRideId] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
@@ -74,6 +75,18 @@ export default function PassengerDashboard() {
           total_rides: data.total_rides || 0,
           franchise_id: data.franchise_id,
         });
+
+        // Fetch city info
+        const { data: franchise } = await supabase
+          .from('franchises')
+          .select('cities(name, state)')
+          .eq('id', data.franchise_id)
+          .single();
+        
+        if (franchise?.cities) {
+          const city = franchise.cities as unknown as { name: string; state: string };
+          setCityInfo(city);
+        }
       }
     } catch (error) {
       console.error("Error fetching passenger data:", error);
@@ -154,8 +167,16 @@ export default function PassengerDashboard() {
           <div className="flex items-center gap-3">
             <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
             <div>
-              <h1 className="font-bold text-primary">Bibi Motos</h1>
-              <p className="text-xs text-muted-foreground">Passageiro</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                {cityInfo && (
+                  <>
+                    <MapPin className="h-3 w-3" />
+                    <span>{cityInfo.name} - {cityInfo.state}</span>
+                    <span className="mx-0.5">•</span>
+                  </>
+                )}
+                Passageiro
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
