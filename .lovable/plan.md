@@ -1,66 +1,89 @@
 
+# PWA + Notificacoes Push + Banner de Instalacao
 
-# Emails Premium em Portugues + Verificacao do Fluxo do Motoboy
-
----
-
-## PARTE 1: Emails de Autenticacao Premium
-
-### Problema Atual
-Os emails de confirmacao de cadastro e recuperacao de senha estao sendo enviados pelo sistema padrao, em ingles, sem branding, sem cores -- completamente fora do padrao da plataforma.
-
-### Solucao
-Criar templates de email HTML premium com a identidade visual da Bibi Motos, 100% em portugues, sem imagens (para evitar bloqueio por provedores).
-
-### Passo 1: Configurar dominio de email
-O projeto ja tem dominio customizado (`www.bibimotos.com.br`), mas ainda nao tem dominio de email configurado. Sera necessario configurar o dominio de envio para que os emails venham de um endereco profissional (ex: `noreply@bibimotos.com.br`).
-
-O usuario precisara confirmar a configuracao do dominio de email.
-
-### Passo 2: Criar templates com a ferramenta de scaffolding
-Usar a ferramenta automatica para gerar os 6 templates de email de autenticacao:
-- **Confirmacao de cadastro** (signup)
-- **Recuperacao de senha** (recovery)
-- **Convite** (invite)
-- **Magic link** (magic-link)
-- **Mudanca de email** (email-change)
-- **Reautenticacao** (reauthentication)
-
-### Passo 3: Aplicar identidade visual da marca
-Cada template sera customizado com:
-- **Cores**: Roxo primario (`hsl(262, 83%, 58%)`) nos botoes e destaques
-- **Accent dourado**: (`hsl(280, 90%, 66%)`) em detalhes
-- **Foreground**: Texto escuro (`hsl(240, 10%, 8%)`)
-- **Muted**: Texto secundario (`hsl(240, 4%, 46%)`)
-- **Border radius**: 8px (--radius do projeto)
-- **Font**: Inter, -apple-system, sans-serif
-- **Fundo do email**: Branco (#ffffff) -- obrigatorio para compatibilidade
-- **Zero imagens** -- tudo em HTML puro com emoji decorativo
-- **100% em portugues** -- nenhuma palavra em ingles
-- **Assuntos engajantes** -- ex: "Falta pouco para voce comecar!", "Sua nova senha esta aqui"
-- **Estrutura**: Topo com nome da marca + emoji, headline, subtitulo, botao CTA, rodape com copyright
-
-### Passo 4: Deploy da funcao
-Implantar a edge function `auth-email-hook` que intercepta os eventos de autenticacao e envia os emails customizados.
+## Situacao Atual
+- **Nenhuma configuracao PWA** existe no projeto (sem manifest.json, sem service worker, sem vite-plugin-pwa)
+- **Nenhuma notificacao push** esta implementada (apenas notificacoes in-app via Supabase Realtime e toasts)
+- **SMS ja funciona** via Comtele (edge function `send-sms` + `src/lib/sms.ts` com funcoes de envio)
+- Nao existe banner de instalacao nem logica de deteccao de dispositivo
 
 ---
 
-## PARTE 2: Verificacao do Fluxo do Motoboy
+## O que sera implementado
 
-### O que sera verificado
-1. **Apos cadastro**: O motoboy consegue fazer login e acessar o dashboard?
-2. **Tela de pendente**: Aparece a tela de "aguardando aprovacao" corretamente?
-3. **Completar cadastro**: O formulario de KYC (6 etapas) esta acessivel?
-4. **Compra de creditos**: A loja de creditos esta visivel mesmo antes da aprovacao?
-5. **Fluxo completo**: Cadastro -> Login -> Completar dados -> Aguardar aprovacao -> Comprar creditos
+### 1. Configurar PWA Completa (Installable Web App)
 
-### Analise Atual (ja verificada no codigo)
-- `useAuth.tsx` ja faz auto-provisioning: ao logar, cria automaticamente o registro em `drivers` com `is_approved: false`
-- `DriverDashboard.tsx` ja mostra tela de pendente quando `is_approved = false`
-- `CompleteRegistration.tsx` tem 6 etapas completas (tipo, foto, dados, documentos, selfie, revisao)
-- `CreditsShop.tsx` existe e e acessivel no dashboard do motorista
+**Instalar dependencia**: `vite-plugin-pwa`
 
-Se algum problema for encontrado durante a implementacao, sera corrigido imediatamente.
+**Configurar `vite.config.ts`**:
+- Adicionar plugin VitePWA com manifest em portugues
+- Nome: "Bibi Motos", short_name: "Bibi Motos"
+- Cores da marca (roxo primario `#7c3aed`, fundo branco)
+- Icones PWA gerados a partir do `favicon.png` existente (192x192 e 512x512)
+- `display: "standalone"` para experiencia de app nativo
+- `navigateFallbackDenylist: [/^\/~oauth/]` para nao cachear rotas de OAuth
+- Service worker com estrategia de cache para assets estaticos
+
+**Atualizar `index.html`**:
+- Adicionar meta tags para mobile (theme-color, apple-mobile-web-app-capable, apple-mobile-web-app-status-bar-style)
+- Link para manifest.webmanifest
+
+**Criar icones PWA**:
+- `public/pwa-192x192.png` e `public/pwa-512x512.png` (reaproveitando o favicon.png existente)
+
+### 2. Banner de Instalacao Premium (so para usuarios logados)
+
+**Novo componente: `src/components/pwa/InstallAppBanner.tsx`**
+
+- Tarja fixa no topo da tela, visivel e bonita, com gradiente da marca (roxo)
+- Texto: "Instale o Bibi Motos no seu celular" + botao "Instalar"
+- **Logica inteligente**:
+  - So aparece para usuarios **logados** (verifica `useAuth`)
+  - Detecta se ja esta instalado como PWA (`window.matchMedia('(display-mode: standalone)')`)
+  - Se ja instalou, nao mostra
+  - Armazena no `localStorage` se o usuario dispensou o banner
+  - Escuta o evento `beforeinstallprompt` (Android/Chrome) para disparo direto
+  - No iOS (Safari): mostra instrucoes "Toque em Compartilhar > Adicionar a Tela de Inicio" com icones visuais, driblando a limitacao do iOS que nao suporta `beforeinstallprompt`
+- Botao de fechar (X) para dispensar temporariamente
+
+**Integrar nos dashboards**: Renderizar o `InstallAppBanner` dentro do `Dashboard.tsx` (apos login, antes do conteudo), garantindo que apareca para motoristas, passageiros e lojistas.
+
+### 3. Notificacoes Push Web (com badge no icone)
+
+**Novo hook: `src/hooks/usePushNotifications.ts`**
+
+- Solicita permissao de notificacao ao usuario (`Notification.requestPermission()`)
+- Registra o service worker para receber push events
+- Armazena o subscription endpoint no banco (nova coluna `push_subscription` na tabela `profiles`)
+- Funcoes: `requestPermission()`, `isSupported()`, `isSubscribed()`
+
+**Atualizar Service Worker (via vite-plugin-pwa)**:
+- Adicionar handler de evento `push` para exibir notificacoes nativas do SO
+- Adicionar handler de evento `notificationclick` para abrir o app na rota correta
+- Configurar `badge` (numero no icone do app) usando `navigator.setAppBadge(count)` quando houver notificacoes nao lidas
+
+**Novo componente: `src/components/pwa/PushNotificationPrompt.tsx`**
+
+- Modal/card amigavel pedindo autorizacao para notificacoes
+- Aparece apos o usuario logar pela primeira vez (ou apos instalar)
+- Texto explicativo: "Ative as notificacoes para nao perder nenhuma corrida"
+- Botoes: "Ativar notificacoes" e "Agora nao"
+- Vibrar o dispositivo em notificacoes criticas (corrida aceita, SOS): `navigator.vibrate([200, 100, 200])`
+
+**Integracao com notificacoes existentes**:
+- Conectar o hook `useRealtimeNotifications` existente com o `usePushNotifications`
+- Quando uma notificacao Realtime chegar E o app estiver em background, dispara push nativa
+- Atualizar o badge count no icone do app: `navigator.setAppBadge(unreadCount)`
+- Limpar badge quando o usuario abrir o app: `navigator.clearAppBadge()`
+
+### 4. Migracao de Banco
+
+**Nova coluna na tabela `profiles`**:
+```sql
+ALTER TABLE profiles ADD COLUMN push_subscription jsonb DEFAULT NULL;
+```
+
+Armazena o objeto de subscription do Push API para envio server-side futuro.
 
 ---
 
@@ -68,12 +91,21 @@ Se algum problema for encontrado durante a implementacao, sera corrigido imediat
 
 | Arquivo | Acao |
 |---|---|
-| `supabase/functions/_shared/email-templates/signup.tsx` | Criar (template de confirmacao) |
-| `supabase/functions/_shared/email-templates/recovery.tsx` | Criar (template de recuperacao) |
-| `supabase/functions/_shared/email-templates/invite.tsx` | Criar (template de convite) |
-| `supabase/functions/_shared/email-templates/magic-link.tsx` | Criar (template de magic link) |
-| `supabase/functions/_shared/email-templates/email-change.tsx` | Criar (template de mudanca email) |
-| `supabase/functions/_shared/email-templates/reauthentication.tsx` | Criar (template de reautenticacao) |
-| `supabase/functions/auth-email-hook/index.ts` | Criar (funcao de roteamento) |
-| `supabase/functions/auth-email-hook/deno.json` | Criar (config) |
+| `vite.config.ts` | Modificar - adicionar vite-plugin-pwa |
+| `index.html` | Modificar - meta tags mobile |
+| `public/pwa-192x192.png` | Criar - icone PWA |
+| `public/pwa-512x512.png` | Criar - icone PWA |
+| `src/components/pwa/InstallAppBanner.tsx` | Criar - banner de instalacao |
+| `src/components/pwa/PushNotificationPrompt.tsx` | Criar - prompt de push |
+| `src/hooks/usePushNotifications.ts` | Criar - hook de push notifications |
+| `src/pages/Dashboard.tsx` | Modificar - integrar banner e prompt |
+| `src/hooks/useRealtimeNotifications.ts` | Modificar - integrar com push nativo + badge |
 
+## Compatibilidade iOS
+- O `beforeinstallprompt` nao funciona no Safari/iOS
+- O banner detecta iOS e mostra instrucoes visuais com icones de "Compartilhar > Adicionar a Tela de Inicio"
+- Push notifications no iOS Safari so funcionam a partir do iOS 16.4+ com PWA instalada -- o sistema detecta essa limitacao e informa o usuario
+- `navigator.setAppBadge` funciona no iOS 16.4+ quando o app esta instalado como PWA
+
+## SMS
+O sistema de SMS ja esta **100% funcional** via Comtele (`send-sms` edge function + `src/lib/sms.ts`). Nenhuma alteracao necessaria.
