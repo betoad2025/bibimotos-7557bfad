@@ -8,6 +8,8 @@ import FranchiseAdminDashboard from "./dashboard/FranchiseAdminDashboard";
 import DriverDashboard from "./dashboard/DriverDashboard";
 import PassengerDashboard from "./dashboard/PassengerDashboard";
 import MerchantDashboard from "./dashboard/MerchantDashboard";
+import { InstallAppBanner } from "@/components/pwa/InstallAppBanner";
+import { PushNotificationPrompt } from "@/components/pwa/PushNotificationPrompt";
 import pendingHero from "@/assets/pending-hero.jpg";
 import logoFull from "@/assets/logo-full.png";
 
@@ -38,11 +40,21 @@ export default function Dashboard() {
   }
 
   // Route to appropriate dashboard based on role
-  if (isSuperAdmin) return <SuperAdminDashboard />;
-  if (isFranchiseAdmin) return <FranchiseAdminDashboard />;
-  if (isDriver) return <DriverDashboard />;
-  if (isPassenger) return <PassengerDashboard />;
-  if (isMerchant) return <MerchantDashboard />;
+  const dashboardContent = isSuperAdmin ? <SuperAdminDashboard /> :
+    isFranchiseAdmin ? <FranchiseAdminDashboard /> :
+    isDriver ? <DriverDashboard /> :
+    isPassenger ? <PassengerDashboard /> :
+    isMerchant ? <MerchantDashboard /> : null;
+
+  if (dashboardContent) {
+    return (
+      <>
+        <InstallAppBanner />
+        <PushNotificationPrompt userId={user.id} />
+        {dashboardContent}
+      </>
+    );
+  }
 
   // Default: user without role - premium pending screen
   return (
