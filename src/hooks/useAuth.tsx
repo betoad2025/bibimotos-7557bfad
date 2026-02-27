@@ -110,17 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       if (!franchiseId) {
-        const { data: franchise } = await supabase
-          .from('franchises')
-          .select('id')
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle();
-        franchiseId = franchise?.id || null;
-      }
-
-      if (!franchiseId) {
-        console.warn('[Auth] No active franchise found for entity creation');
+        // CRITICO: NUNCA fazer fallback para qualquer franquia ativa!
+        // Isso causava usuarios de Guaxupé serem vinculados a Jundiaí
+        console.error('[Auth] ERRO CRITICO: Nenhuma franquia encontrada para city_id:', cityId, 
+          '- NÃO será criado registro de entidade para evitar vinculação incorreta.');
         return;
       }
 
