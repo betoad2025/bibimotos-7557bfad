@@ -28,6 +28,7 @@ import {
   Bike,
   ArrowRightLeft,
   AlertTriangle,
+  MapPin,
 } from "lucide-react";
 import { CreditsShop } from "@/components/driver/CreditsShop";
 import { RideHistory } from "@/components/ride/RideHistory";
@@ -55,6 +56,7 @@ export default function DriverDashboard() {
   const { rateRide, completeRide, updateDriverLocation } = useRideService();
   
   const [driverData, setDriverData] = useState<DriverData | null>(null);
+  const [cityInfo, setCityInfo] = useState<{ name: string; state: string } | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [currentRideId, setCurrentRideId] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -131,6 +133,18 @@ export default function DriverDashboard() {
           franchise_id: data.franchise_id,
         });
         setIsOnline(data.is_online || false);
+
+        // Fetch city info
+        const { data: franchise } = await supabase
+          .from('franchises')
+          .select('cities(name, state)')
+          .eq('id', data.franchise_id)
+          .single();
+        
+        if (franchise?.cities) {
+          const city = franchise.cities as unknown as { name: string; state: string };
+          setCityInfo(city);
+        }
       }
     } catch (error) {
       console.error("Error fetching driver data:", error);
@@ -245,8 +259,16 @@ export default function DriverDashboard() {
           <div className="flex items-center gap-3">
             <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
             <div>
-              <h1 className="font-bold text-primary">Bibi Motos</h1>
-              <p className="text-xs text-muted-foreground">Motorista</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                {cityInfo && (
+                  <>
+                    <MapPin className="h-3 w-3" />
+                    <span>{cityInfo.name} - {cityInfo.state}</span>
+                    <span className="mx-0.5">•</span>
+                  </>
+                )}
+                Motorista
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
