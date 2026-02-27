@@ -32,13 +32,36 @@ export function useRealtimeNotifications({ franchiseId, userId }: UseRealtimeNot
     };
 
     setNotifications(prev => [newNotification, ...prev].slice(0, 50));
-    setUnreadCount(prev => prev + 1);
+    setUnreadCount(prev => {
+      const newCount = prev + 1;
+      // Update app badge
+      if ("setAppBadge" in navigator) {
+        (navigator as any).setAppBadge(newCount).catch(() => {});
+      }
+      return newCount;
+    });
 
     // Show toast for new notification
     toast({
       title: notification.title,
       description: notification.message,
     });
+
+    // Send native push notification when app is in background
+    if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
+      try {
+        const isCritical = notification.type === 'ride' && notification.title.includes('SOS');
+        new window.Notification(notification.title, {
+          body: notification.message,
+          icon: "/pwa-192x192.png",
+          badge: "/pwa-192x192.png",
+          tag: isCritical ? "critical" : notification.type,
+        });
+        if (isCritical && "vibrate" in navigator) {
+          navigator.vibrate([200, 100, 200]);
+        }
+      } catch {}
+    }
   }, [toast]);
 
   // Mark notification as read
@@ -53,6 +76,9 @@ export function useRealtimeNotifications({ franchiseId, userId }: UseRealtimeNot
   const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
+    if ("clearAppBadge" in navigator) {
+      (navigator as any).clearAppBadge().catch(() => {});
+    }
   }, []);
 
   // Clear all notifications
