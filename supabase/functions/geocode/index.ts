@@ -14,6 +14,9 @@ interface GeocodeRequest {
   destination?: { lat: number; lng: number };
   input?: string;
   sessionToken?: string;
+  locationLat?: number;
+  locationLng?: number;
+  locationRadius?: number;
 }
 
 serve(async (req) => {
@@ -70,6 +73,11 @@ serve(async (req) => {
         let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(body.input)}&key=${apiKey}&language=pt-BR&components=country:br`;
         if (body.sessionToken) {
           url += `&sessiontoken=${body.sessionToken}`;
+        }
+        if (body.locationLat !== undefined && body.locationLng !== undefined) {
+          url += `&location=${body.locationLat},${body.locationLng}`;
+          url += `&radius=${body.locationRadius || 30000}`;
+          url += `&strictbounds=true`;
         }
         const response = await fetch(url);
         result = await response.json();

@@ -5,6 +5,13 @@ import { MapPin, Navigation, Loader2, X } from 'lucide-react';
 import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 import { cn } from '@/lib/utils';
 
+interface CityBias {
+  lat: number;
+  lng: number;
+  name: string;
+  state: string;
+}
+
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
@@ -14,6 +21,7 @@ interface AddressAutocompleteProps {
   showCurrentLocation?: boolean;
   className?: string;
   disabled?: boolean;
+  cityBias?: CityBias | null;
 }
 
 interface Suggestion {
@@ -32,6 +40,7 @@ export function AddressAutocomplete({
   showCurrentLocation = false,
   className,
   disabled = false,
+  cityBias,
 }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -54,17 +63,21 @@ export function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch autocomplete suggestions
+  // Fetch autocomplete suggestions with city bias
   const fetchSuggestions = useCallback(async (input: string) => {
     if (input.length < 3) {
       setSuggestions([]);
       return;
     }
 
-    const results = await autocomplete(input, sessionTokenRef.current);
+    const results = await autocomplete(
+      input, 
+      sessionTokenRef.current,
+      cityBias ? { lat: cityBias.lat, lng: cityBias.lng, radius: 30000 } : undefined
+    );
     setSuggestions(results);
     setShowSuggestions(results.length > 0);
-  }, [autocomplete]);
+  }, [autocomplete, cityBias]);
 
   // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,13 +99,11 @@ export function AddressAutocomplete({
     setShowSuggestions(false);
     setSuggestions([]);
     
-    // Geocode to get coordinates
     const location = await geocode(suggestion.description);
     if (location) {
       onSelect(location);
     }
     
-    // Reset session token for next search
     sessionTokenRef.current = crypto.randomUUID();
   };
 
