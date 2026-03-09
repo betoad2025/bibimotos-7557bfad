@@ -38,7 +38,7 @@ const Register = () => {
   }, [roleFromUrl]);
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
+    email: emailFromUrl || "",
     phone: "",
     password: "",
     confirmPassword: "",
