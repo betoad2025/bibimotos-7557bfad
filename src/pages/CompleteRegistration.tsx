@@ -222,6 +222,21 @@ export default function CompleteRegistration() {
 
       if (error) throw error;
 
+      // Check if user came via franchise invite and accept it
+      const inviteId = searchParams.get('invite') || user.user_metadata?.franchise_invite_id;
+      if (inviteId) {
+        try {
+          const response = await supabase.functions.invoke("accept-franchise-invite", {
+            body: { invite_id: inviteId },
+          });
+          if (response.data?.success) {
+            toast({ title: "Franquia ativada! 🎉", description: "Você agora é proprietário da franquia." });
+          }
+        } catch (inviteErr) {
+          console.error("Error accepting franchise invite:", inviteErr);
+        }
+      }
+
       // Enviar SMS de boas-vindas
       if (formData.phone) {
         const userName = profile?.full_name || 'Cliente';
