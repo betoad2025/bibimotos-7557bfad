@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Clock, FileText, CheckCircle, LogOut } from "lucide-react";
 import SuperAdminDashboard from "./dashboard/SuperAdminDashboard";
