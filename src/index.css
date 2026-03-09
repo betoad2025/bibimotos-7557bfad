@@ -269,4 +269,31 @@
   .glow-primary {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
   }
+
+  /* Float animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  /* Slow zoom for hero bg */
+  @keyframes slowZoom {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.08); }
+  }
+
+  /* Scroll indicator */
+  @keyframes scrollDown {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(8px); opacity: 0; }
+  }
+
+  /* Pulse glow for CTA buttons */
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px hsl(var(--accent) / 0.3); }
+    50% { box-shadow: 0 0 40px hsl(var(--accent) / 0.6), 0 0 80px hsl(var(--accent) / 0.2); }
+  }
 }

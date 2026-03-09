@@ -83,8 +83,8 @@ const Register = () => {
 
     if (!error) {
       toast({
-        title: "Conta criada com sucesso!",
-        description: "Verifique seu email para confirmar o cadastro.",
+        title: "Conta criada com sucesso! 🎉",
+        description: "Você já pode fazer login e começar a usar.",
       });
       navigate("/login");
     }
