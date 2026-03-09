@@ -78,9 +78,10 @@ const Register = () => {
     setIsLoading(true);
 
     const { error } = await signUp(formData.email, formData.password, formData.name, {
-      user_type: userType,
+      user_type: roleFromUrl === 'franchise_admin' ? 'passenger' : userType,
       city_id: cityIdFromUrl || undefined,
       phone: formData.phone || undefined,
+      franchise_invite_id: inviteId || undefined,
     });
 
     if (!error) {
