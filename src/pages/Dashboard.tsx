@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Clock, FileText, CheckCircle, LogOut } from "lucide-react";
 import SuperAdminDashboard from "./dashboard/SuperAdminDashboard";
@@ -16,12 +17,38 @@ import logoFull from "@/assets/logo-full.png";
 export default function Dashboard() {
   const { user, loading, roles, isSuperAdmin, isFranchiseAdmin, isDriver, isPassenger, isMerchant, signOut } = useAuth();
   const navigate = useNavigate();
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/login");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user || loading || isSuperAdmin) {
+      setProfileComplete(true);
+      return;
+    }
+    const checkProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("profile_complete, cpf, cnpj, phone, city, state")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        const isComplete = data.profile_complete === true || 
+          ((data.cpf || data.cnpj) && data.phone && data.city && data.state);
+        setProfileComplete(!!isComplete);
+        if (isComplete && !data.profile_complete) {
+          await supabase.from("profiles").update({ profile_complete: true }).eq("user_id", user.id);
+        }
+      } else {
+        setProfileComplete(false);
+      }
+    };
+    checkProfile();
+  }, [user, loading, isSuperAdmin]);
 
   if (loading) {
     return (
@@ -36,6 +63,12 @@ export default function Dashboard() {
   }
 
   if (!user) {
+    return null;
+  }
+
+  // If profile is incomplete and user has a role, force them to complete registration
+  if (profileComplete === false && roles.length > 0) {
+    navigate("/complete-registration");
     return null;
   }
 

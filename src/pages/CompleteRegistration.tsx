@@ -215,6 +215,7 @@ export default function CompleteRegistration() {
           selfie_url: selfieUrl || null,
           selfie_with_doc_url: selfieWithDocUrl || null,
           kyc_status: 'pending',
+          profile_complete: true,
         })
         .eq('user_id', user.id);
 

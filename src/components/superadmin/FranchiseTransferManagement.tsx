@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,8 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ArrowRightLeft, Building2, Users, Bike, Store,
-  AlertTriangle, CheckCircle2, Clock, History
+  ArrowRightLeft, Building2, Users, Bike, Store, Search,
+  AlertTriangle, CheckCircle2, History, Crown, User, Megaphone
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -47,7 +48,23 @@ interface Profile {
   user_id: string;
   full_name: string;
   email: string;
+  phone: string | null;
   avatar_url: string | null;
+  city: string | null;
+}
+
+interface UserRole {
+  user_id: string;
+  role: string;
+}
+
+interface Lead {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string;
+  city: string;
+  status: string | null;
 }
 
 interface TransferHistory {
@@ -62,17 +79,35 @@ interface TransferHistory {
   notes: string | null;
 }
 
+type CandidateType = "all" | "profile" | "lead" | "driver" | "passenger" | "merchant" | "franchise_admin";
+
+interface TransferCandidate {
+  type: "profile" | "lead";
+  id: string;
+  user_id?: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  roles: string[];
+  avatar_url?: string | null;
+}
+
 export function FranchiseTransferManagement() {
   const [franchises, setFranchises] = useState<Franchise[]>([]);
-  const [owners, setOwners] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [history, setHistory] = useState<TransferHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [transferDialog, setTransferDialog] = useState<{ open: boolean; franchise: Franchise | null }>({
     open: false,
     franchise: null,
   });
-  const [transferForm, setTransferForm] = useState({ newOwnerId: "", notes: "" });
+  const [transferForm, setTransferForm] = useState({ newOwnerId: "", notes: "", isLead: false });
   const [stats, setStats] = useState({ drivers: 0, passengers: 0, merchants: 0 });
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [candidateFilter, setCandidateFilter] = useState<CandidateType>("all");
 
   useEffect(() => {
     fetchData();
@@ -81,31 +116,19 @@ export function FranchiseTransferManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [franchisesRes, rolesRes, historyRes] = await Promise.all([
-        supabase
-          .from("franchises")
-          .select("*, cities(name, state)")
-          .order("name"),
-        supabase.from("user_roles").select("user_id").eq("role", "franchise_admin"),
-        supabase
-          .from("franchise_transfer_history")
-          .select("*")
-          .order("transferred_at", { ascending: false })
-          .limit(50),
+      const [franchisesRes, profilesRes, rolesRes, leadsRes, historyRes] = await Promise.all([
+        supabase.from("franchises").select("*, cities(name, state)").order("name"),
+        supabase.from("profiles").select("id, user_id, full_name, email, phone, avatar_url, city").order("full_name"),
+        supabase.from("user_roles").select("user_id, role"),
+        supabase.from("franchise_leads").select("*").order("created_at", { ascending: false }),
+        supabase.from("franchise_transfer_history").select("*").order("transferred_at", { ascending: false }).limit(50),
       ]);
 
       if (franchisesRes.data) setFranchises(franchisesRes.data);
+      if (profilesRes.data) setProfiles(profilesRes.data);
+      if (rolesRes.data) setUserRoles(rolesRes.data);
+      if (leadsRes.data) setLeads(leadsRes.data);
       if (historyRes.data) setHistory(historyRes.data);
-
-      // Fetch owners profiles
-      if (rolesRes.data) {
-        const userIds = rolesRes.data.map((r) => r.user_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, user_id, full_name, email, avatar_url")
-          .in("user_id", userIds);
-        if (profiles) setOwners(profiles);
-      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -118,7 +141,6 @@ export function FranchiseTransferManagement() {
       supabase.from("passengers").select("id", { count: "exact", head: true }).eq("franchise_id", franchiseId),
       supabase.from("merchants").select("id", { count: "exact", head: true }).eq("franchise_id", franchiseId),
     ]);
-
     setStats({
       drivers: driversRes.count || 0,
       passengers: passengersRes.count || 0,
@@ -126,15 +148,119 @@ export function FranchiseTransferManagement() {
     });
   };
 
+  const getUserRoles = (userId: string) => userRoles.filter(r => r.user_id === userId).map(r => r.role);
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      super_admin: "Super Admin",
+      franchise_admin: "Franqueado",
+      driver: "Motorista",
+      passenger: "Passageiro",
+      merchant: "Lojista",
+    };
+    return labels[role] || role;
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "super_admin": return <Crown className="h-3 w-3" />;
+      case "franchise_admin": return <Building2 className="h-3 w-3" />;
+      case "driver": return <Bike className="h-3 w-3" />;
+      case "passenger": return <User className="h-3 w-3" />;
+      case "merchant": return <Store className="h-3 w-3" />;
+      default: return null;
+    }
+  };
+
+  // Build unified candidate list
+  const candidates: TransferCandidate[] = useMemo(() => {
+    const currentOwnerId = transferDialog.franchise?.owner_id;
+    const list: TransferCandidate[] = [];
+
+    // Add profiles
+    profiles.forEach(p => {
+      if (p.user_id === currentOwnerId) return;
+      list.push({
+        type: "profile",
+        id: p.user_id,
+        user_id: p.user_id,
+        name: p.full_name,
+        email: p.email,
+        phone: p.phone,
+        city: p.city,
+        roles: getUserRoles(p.user_id),
+        avatar_url: p.avatar_url,
+      });
+    });
+
+    // Add leads that don't have a profile
+    const profileEmails = new Set(profiles.map(p => p.email?.toLowerCase()));
+    leads.forEach(l => {
+      if (l.email && profileEmails.has(l.email.toLowerCase())) return;
+      list.push({
+        type: "lead",
+        id: l.id,
+        name: l.name,
+        email: l.email,
+        phone: l.phone,
+        city: l.city,
+        roles: [],
+      });
+    });
+
+    return list;
+  }, [profiles, leads, userRoles, transferDialog.franchise]);
+
+  const filteredCandidates = useMemo(() => {
+    let filtered = candidates;
+
+    // Filter by type
+    if (candidateFilter === "lead") {
+      filtered = filtered.filter(c => c.type === "lead");
+    } else if (candidateFilter === "profile") {
+      filtered = filtered.filter(c => c.type === "profile");
+    } else if (candidateFilter !== "all") {
+      filtered = filtered.filter(c => c.roles.includes(candidateFilter));
+    }
+
+    // Search
+    if (candidateSearch.trim()) {
+      const s = candidateSearch.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.name.toLowerCase().includes(s) ||
+        (c.email && c.email.toLowerCase().includes(s)) ||
+        (c.phone && c.phone.includes(s)) ||
+        (c.city && c.city.toLowerCase().includes(s))
+      );
+    }
+
+    return filtered.slice(0, 50);
+  }, [candidates, candidateFilter, candidateSearch]);
+
   const handleOpenTransfer = async (franchise: Franchise) => {
     setTransferDialog({ open: true, franchise });
-    setTransferForm({ newOwnerId: "", notes: "" });
+    setTransferForm({ newOwnerId: "", notes: "", isLead: false });
+    setCandidateSearch("");
+    setCandidateFilter("all");
     await fetchFranchiseStats(franchise.id);
+  };
+
+  const handleSelectCandidate = (candidate: TransferCandidate) => {
+    setTransferForm(prev => ({
+      ...prev,
+      newOwnerId: candidate.id,
+      isLead: candidate.type === "lead",
+    }));
   };
 
   const handleTransfer = async () => {
     if (!transferDialog.franchise || !transferForm.newOwnerId) {
       toast.error("Selecione o novo proprietário");
+      return;
+    }
+
+    if (transferForm.isLead) {
+      toast.error("Leads precisam se cadastrar na plataforma antes de receber uma franquia. Converta o lead em usuário primeiro.");
       return;
     }
 
@@ -147,9 +273,15 @@ export function FranchiseTransferManagement() {
 
       if (error) throw error;
 
-      const result = data as { success: boolean; drivers_transferred: number; passengers_transferred: number; merchants_transferred: number; error?: string };
-      
+      const result = data as any;
       if (result.success) {
+        // Mark the new owner's profile as needing completion check
+        await supabase
+          .from("profiles")
+          .update({ profile_complete: false })
+          .eq("user_id", transferForm.newOwnerId)
+          .is("cpf", null);
+
         toast.success(
           `Franquia transferida! ${result.drivers_transferred} motoristas, ${result.passengers_transferred} passageiros, ${result.merchants_transferred} comerciantes`
         );
@@ -165,14 +297,10 @@ export function FranchiseTransferManagement() {
 
   const getOwnerProfile = (ownerId: string | null) => {
     if (!ownerId) return null;
-    return owners.find((o) => o.user_id === ownerId);
+    return profiles.find(p => p.user_id === ownerId);
   };
 
-  const getAvailableOwners = () => {
-    // Exclude current owner
-    const currentOwnerId = transferDialog.franchise?.owner_id;
-    return owners.filter((o) => o.user_id !== currentOwnerId);
-  };
+  const selectedCandidate = candidates.find(c => c.id === transferForm.newOwnerId);
 
   return (
     <div className="space-y-6">
@@ -186,7 +314,7 @@ export function FranchiseTransferManagement() {
             <div>
               <h2 className="text-2xl font-bold">Transferência de Franquias</h2>
               <p className="text-purple-200">
-                Transfira a propriedade mantendo todos os dados (motoristas, passageiros, comerciantes)
+                Transfira a propriedade para qualquer usuário cadastrado — motorista, lojista, passageiro ou novo franqueado
               </p>
             </div>
           </div>
@@ -217,34 +345,22 @@ export function FranchiseTransferManagement() {
                 return (
                   <TableRow key={franchise.id}>
                     <TableCell className="font-medium">{franchise.name}</TableCell>
-                    <TableCell>
-                      {franchise.cities?.name}/{franchise.cities?.state}
-                    </TableCell>
+                    <TableCell>{franchise.cities?.name}/{franchise.cities?.state}</TableCell>
                     <TableCell>
                       {owner ? (
                         <div className="flex items-center gap-2">
-                          <UserAvatar
-                            avatarUrl={owner.avatar_url}
-                            name={owner.full_name || owner.email}
-                            size="sm"
-                            showRating={false}
-                          />
+                          <UserAvatar avatarUrl={owner.avatar_url} name={owner.full_name || owner.email} size="sm" showRating={false} />
                           <div>
                             <p className="font-medium text-sm">{owner.full_name}</p>
                             <p className="text-xs text-muted-foreground">{owner.email}</p>
                           </div>
                         </div>
                       ) : (
-                        <Badge variant="outline" className="text-yellow-600">
-                          Sistema Master
-                        </Badge>
+                        <Badge variant="outline" className="text-yellow-600">Sistema Master</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => handleOpenTransfer(franchise)}
-                      >
+                      <Button size="sm" onClick={() => handleOpenTransfer(franchise)}>
                         <ArrowRightLeft className="h-4 w-4 mr-1" />
                         Transferir
                       </Button>
@@ -267,9 +383,7 @@ export function FranchiseTransferManagement() {
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhuma transferência registrada
-            </p>
+            <p className="text-center text-muted-foreground py-8">Nenhuma transferência registrada</p>
           ) : (
             <Table>
               <TableHeader>
@@ -283,39 +397,22 @@ export function FranchiseTransferManagement() {
               </TableHeader>
               <TableBody>
                 {history.map((h) => {
-                  const franchise = franchises.find((f) => f.id === h.franchise_id);
+                  const franchise = franchises.find(f => f.id === h.franchise_id);
                   const fromOwner = getOwnerProfile(h.from_owner_id);
                   const toOwner = getOwnerProfile(h.to_owner_id);
                   return (
                     <TableRow key={h.id}>
-                      <TableCell className="font-medium">
-                        {franchise?.name || "Franquia removida"}
-                      </TableCell>
-                      <TableCell>
-                        {fromOwner?.full_name || "Sistema Master"}
-                      </TableCell>
-                      <TableCell>
-                        {toOwner?.full_name || "-"}
-                      </TableCell>
+                      <TableCell className="font-medium">{franchise?.name || "Franquia removida"}</TableCell>
+                      <TableCell>{fromOwner?.full_name || "Sistema Master"}</TableCell>
+                      <TableCell>{toOwner?.full_name || "-"}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Badge variant="outline">
-                            <Bike className="h-3 w-3 mr-1" />
-                            {h.drivers_count}
-                          </Badge>
-                          <Badge variant="outline">
-                            <Users className="h-3 w-3 mr-1" />
-                            {h.passengers_count}
-                          </Badge>
-                          <Badge variant="outline">
-                            <Store className="h-3 w-3 mr-1" />
-                            {h.merchants_count}
-                          </Badge>
+                          <Badge variant="outline"><Bike className="h-3 w-3 mr-1" />{h.drivers_count}</Badge>
+                          <Badge variant="outline"><Users className="h-3 w-3 mr-1" />{h.passengers_count}</Badge>
+                          <Badge variant="outline"><Store className="h-3 w-3 mr-1" />{h.merchants_count}</Badge>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {format(new Date(h.transferred_at), "dd/MM/yyyy HH:mm")}
-                      </TableCell>
+                      <TableCell>{format(new Date(h.transferred_at), "dd/MM/yyyy HH:mm")}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -326,11 +423,8 @@ export function FranchiseTransferManagement() {
       </Card>
 
       {/* Transfer Dialog */}
-      <Dialog
-        open={transferDialog.open}
-        onOpenChange={(open) => setTransferDialog({ open, franchise: null })}
-      >
-        <DialogContent className="max-w-lg">
+      <Dialog open={transferDialog.open} onOpenChange={(open) => setTransferDialog({ open, franchise: null })}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowRightLeft className="h-5 w-5 text-purple-600" />
@@ -343,14 +437,14 @@ export function FranchiseTransferManagement() {
 
           <div className="space-y-4 py-4">
             {/* Warning */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-yellow-800">Atenção</p>
-                  <p className="text-sm text-yellow-700">
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">Atenção</p>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
                     Esta ação irá transferir todos os dados da franquia para o novo proprietário.
-                    O processo é irreversível.
+                    Se o novo dono não tiver cadastro completo, será bloqueado até preencher os dados.
                   </p>
                 </div>
               </div>
@@ -381,34 +475,129 @@ export function FranchiseTransferManagement() {
               </Card>
             </div>
 
-            {/* New Owner Select */}
-            <div className="space-y-2">
-              <Label>Novo Proprietário</Label>
-              <Select
-                value={transferForm.newOwnerId}
-                onValueChange={(v) => setTransferForm({ ...transferForm, newOwnerId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o novo proprietário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableOwners().map((owner) => (
-                    <SelectItem key={owner.user_id} value={owner.user_id}>
-                      <div className="flex items-center gap-2">
-                        <span>{owner.full_name || owner.email}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Candidate Search & Filter */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Novo Proprietário</Label>
+              
+              <div className="flex flex-wrap gap-2">
+                <Select value={candidateFilter} onValueChange={(v) => setCandidateFilter(v as CandidateType)}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Filtrar por tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="lead">📋 Leads</SelectItem>
+                    <SelectItem value="franchise_admin">👑 Franqueados</SelectItem>
+                    <SelectItem value="driver">🏍️ Motoristas</SelectItem>
+                    <SelectItem value="passenger">👤 Passageiros</SelectItem>
+                    <SelectItem value="merchant">🏪 Lojistas</SelectItem>
+                    <SelectItem value="profile">📧 Todos Cadastros</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome, email, telefone ou cidade..."
+                    value={candidateSearch}
+                    onChange={(e) => setCandidateSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Selected candidate */}
+              {selectedCandidate && (
+                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">{selectedCandidate.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedCandidate.email} {selectedCandidate.city && `• ${selectedCandidate.city}`}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    {selectedCandidate.type === "lead" && (
+                      <Badge variant="outline" className="text-orange-600 border-orange-300">Lead</Badge>
+                    )}
+                    {selectedCandidate.roles.map(r => (
+                      <Badge key={r} variant="secondary" className="text-xs flex items-center gap-1">
+                        {getRoleIcon(r)}
+                        {getRoleLabel(r)}
+                      </Badge>
+                    ))}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setTransferForm(prev => ({ ...prev, newOwnerId: "", isLead: false }))}>
+                    ✕
+                  </Button>
+                </div>
+              )}
+
+              {/* Candidate list */}
+              {!selectedCandidate && (
+                <div className="border rounded-lg max-h-60 overflow-y-auto">
+                  {filteredCandidates.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-6 text-sm">
+                      Nenhum resultado encontrado
+                    </p>
+                  ) : (
+                    filteredCandidates.map(candidate => (
+                      <button
+                        key={`${candidate.type}-${candidate.id}`}
+                        onClick={() => handleSelectCandidate(candidate)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 border-b last:border-b-0 text-left transition-colors"
+                      >
+                        {candidate.type === "profile" ? (
+                          <UserAvatar avatarUrl={candidate.avatar_url} name={candidate.name} size="sm" showRating={false} />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <Megaphone className="h-4 w-4 text-orange-600" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{candidate.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {candidate.email || candidate.phone}
+                            {candidate.city && ` • ${candidate.city}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {candidate.type === "lead" && (
+                            <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">Lead</Badge>
+                          )}
+                          {candidate.roles.map(r => (
+                            <Badge key={r} variant="secondary" className="text-xs flex items-center gap-1">
+                              {getRoleIcon(r)}
+                              {getRoleLabel(r)}
+                            </Badge>
+                          ))}
+                          {candidate.type === "profile" && candidate.roles.length === 0 && (
+                            <Badge variant="outline" className="text-xs">Usuário</Badge>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Lead warning */}
+            {transferForm.isLead && (
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Este é um <strong>lead</strong> e ainda não possui conta na plataforma. 
+                  Ele precisa se cadastrar primeiro. Depois do cadastro, volte aqui para transferir a franquia.
+                </p>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="space-y-2">
               <Label>Observações (opcional)</Label>
               <Textarea
                 value={transferForm.notes}
-                onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })}
+                onChange={(e) => setTransferForm(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Motivo da transferência..."
                 rows={3}
               />
@@ -417,7 +606,7 @@ export function FranchiseTransferManagement() {
             <Button
               onClick={handleTransfer}
               className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={!transferForm.newOwnerId}
+              disabled={!transferForm.newOwnerId || transferForm.isLead}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Confirmar Transferência
