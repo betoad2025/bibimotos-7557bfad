@@ -1329,6 +1329,73 @@ export type Database = {
           },
         ]
       }
+      franchise_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          franchise_id: string
+          id: string
+          invited_by: string
+          lead_id: string | null
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          franchise_id: string
+          id?: string
+          invited_by: string
+          lead_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          franchise_id?: string
+          id?: string
+          invited_by?: string
+          lead_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "franchise_invites_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_invites_franchise_id_fkey"
+            columns: ["franchise_id"]
+            isOneToOne: false
+            referencedRelation: "franchises_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "franchise_invites_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "franchise_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       franchise_leads: {
         Row: {
           city: string
