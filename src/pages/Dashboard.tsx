@@ -39,6 +39,40 @@ export default function Dashboard() {
     return null;
   }
 
+  // Check profile completeness for non-super-admins
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user || isSuperAdmin) {
+      setProfileComplete(true);
+      return;
+    }
+    const checkProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("profile_complete, cpf, cnpj, phone, city, state")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        const isComplete = data.profile_complete === true || 
+          ((data.cpf || data.cnpj) && data.phone && data.city && data.state);
+        setProfileComplete(!!isComplete);
+        if (isComplete && !data.profile_complete) {
+          await supabase.from("profiles").update({ profile_complete: true }).eq("user_id", user.id);
+        }
+      } else {
+        setProfileComplete(false);
+      }
+    };
+    checkProfile();
+  }, [user, isSuperAdmin]);
+
+  // If profile is incomplete and user has a role, force them to complete registration
+  if (profileComplete === false && roles.length > 0) {
+    navigate("/complete-registration");
+    return null;
+  }
+
   // Route to appropriate dashboard based on role
   const dashboardContent = isSuperAdmin ? <SuperAdminDashboard /> :
     isFranchiseAdmin ? <FranchiseAdminDashboard /> :
