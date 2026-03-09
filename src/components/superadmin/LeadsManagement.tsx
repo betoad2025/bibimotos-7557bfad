@@ -94,10 +94,10 @@ export function LeadsManagement() {
         supabase.from("franchises").select("id, name, city_id, owner_id"),
       ]);
       
-      const leadsData = leadsRes.data || [];
+      const leadsData = (leadsRes.data || []) as unknown as Lead[];
       setLeads(leadsData);
       setCities(citiesRes.data || []);
-      setFranchises(franchisesRes.data || []);
+      setFranchises(franchisesRes.data || [] as unknown as Franchise[]);
 
       // Detect duplicates by phone or email
       const phoneMap: Record<string, Lead[]> = {};
