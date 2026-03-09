@@ -30,7 +30,20 @@ export default function Dashboard() {
       setProfileComplete(true);
       return;
     }
+
     const checkProfile = async () => {
+      // Auto-accept franchise invite if present in user metadata
+      const inviteId = user.user_metadata?.franchise_invite_id;
+      if (inviteId) {
+        try {
+          await supabase.functions.invoke("accept-franchise-invite", {
+            body: { invite_id: inviteId },
+          });
+        } catch (e) {
+          console.error("Auto-accept invite error:", e);
+        }
+      }
+
       const { data } = await supabase
         .from("profiles")
         .select("profile_complete, cpf, cnpj, phone, city, state")

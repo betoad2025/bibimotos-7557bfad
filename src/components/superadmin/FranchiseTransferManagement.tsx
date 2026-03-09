@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import {
   ArrowRightLeft, Building2, Users, Bike, Store, Search,
-  AlertTriangle, CheckCircle2, History, Crown, User, Megaphone
+  AlertTriangle, CheckCircle2, History, Crown, User, Megaphone, Mail
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -253,14 +253,59 @@ export function FranchiseTransferManagement() {
     }));
   };
 
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  const handleSendInvite = async () => {
+    if (!transferDialog.franchise || !selectedCandidate) return;
+    
+    if (!selectedCandidate.email) {
+      toast.error("O lead não possui email cadastrado. Não é possível enviar convite.");
+      return;
+    }
+
+    setInviteLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke("send-franchise-invite", {
+        body: {
+          franchise_id: transferDialog.franchise.id,
+          lead_id: selectedCandidate.type === "lead" ? selectedCandidate.id : undefined,
+          email: selectedCandidate.email,
+          phone: selectedCandidate.phone,
+          name: selectedCandidate.name,
+          notes: transferForm.notes || undefined,
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      
+      const result = response.data;
+      if (result?.success) {
+        if (result.method === "direct_transfer") {
+          toast.success(result.message);
+        } else {
+          toast.success(result.message);
+        }
+        setTransferDialog({ open: false, franchise: null });
+        fetchData();
+      } else {
+        throw new Error(result?.error || "Erro desconhecido");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar convite");
+    }
+    setInviteLoading(false);
+  };
+
   const handleTransfer = async () => {
     if (!transferDialog.franchise || !transferForm.newOwnerId) {
       toast.error("Selecione o novo proprietário");
       return;
     }
 
+    // If it's a lead, send invite instead of blocking
     if (transferForm.isLead) {
-      toast.error("Leads precisam se cadastrar na plataforma antes de receber uma franquia. Converta o lead em usuário primeiro.");
+      await handleSendInvite();
       return;
     }
 
@@ -275,7 +320,6 @@ export function FranchiseTransferManagement() {
 
       const result = data as any;
       if (result.success) {
-        // Mark the new owner's profile as needing completion check
         await supabase
           .from("profiles")
           .update({ profile_complete: false })
@@ -581,14 +625,17 @@ export function FranchiseTransferManagement() {
               )}
             </div>
 
-            {/* Lead warning */}
+            {/* Lead invite info */}
             {transferForm.isLead && (
-              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Este é um <strong>lead</strong> e ainda não possui conta na plataforma. 
-                  Ele precisa se cadastrar primeiro. Depois do cadastro, volte aqui para transferir a franquia.
-                </p>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
+                <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="font-medium mb-1">Este é um lead — será enviado um convite por e-mail</p>
+                  <p>
+                    O convidado receberá um link para criar a conta. Ao completar o cadastro, 
+                    a franquia será transferida automaticamente, sem necessidade de aprovação.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -606,10 +653,15 @@ export function FranchiseTransferManagement() {
             <Button
               onClick={handleTransfer}
               className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={!transferForm.newOwnerId || transferForm.isLead}
+              disabled={!transferForm.newOwnerId || inviteLoading}
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Confirmar Transferência
+              {inviteLoading ? (
+                <><span className="animate-spin mr-2">⏳</span> Enviando convite...</>
+              ) : transferForm.isLead ? (
+                <><Mail className="h-4 w-4 mr-2" />Enviar Convite e Transferir</>
+              ) : (
+                <><CheckCircle2 className="h-4 w-4 mr-2" />Confirmar Transferência</>
+              )}
             </Button>
           </div>
         </DialogContent>

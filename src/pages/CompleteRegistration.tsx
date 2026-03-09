@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,6 +19,7 @@ export default function CompleteRegistration() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [step, setStep] = useState<Step>('type');
   const [isLoading, setIsLoading] = useState(false);
@@ -220,6 +221,21 @@ export default function CompleteRegistration() {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Check if user came via franchise invite and accept it
+      const inviteId = searchParams.get('invite') || user.user_metadata?.franchise_invite_id;
+      if (inviteId) {
+        try {
+          const response = await supabase.functions.invoke("accept-franchise-invite", {
+            body: { invite_id: inviteId },
+          });
+          if (response.data?.success) {
+            toast({ title: "Franquia ativada! 🎉", description: "Você agora é proprietário da franquia." });
+          }
+        } catch (inviteErr) {
+          console.error("Error accepting franchise invite:", inviteErr);
+        }
+      }
 
       // Enviar SMS de boas-vindas
       if (formData.phone) {

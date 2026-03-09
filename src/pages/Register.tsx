@@ -18,25 +18,29 @@ const Register = () => {
   const { signUp } = useAuth();
   const { toast } = useToast();
   
-  // Read role and city_id from URL params
-  const roleFromUrl = searchParams.get('role') as UserType | null;
+  // Read role, city_id and invite from URL params
+  const roleFromUrl = searchParams.get('role') as UserType | 'franchise_admin' | null;
   const cityIdFromUrl = searchParams.get('city_id');
+  const inviteId = searchParams.get('invite');
+  const emailFromUrl = searchParams.get('email');
+  
+  const isInvite = roleFromUrl === 'franchise_admin' && !!inviteId;
   
   const [userType, setUserType] = useState<UserType>(
     roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl) 
-      ? roleFromUrl 
+      ? roleFromUrl as UserType 
       : "passenger"
   );
 
   // Sync with URL param changes
   useEffect(() => {
     if (roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl)) {
-      setUserType(roleFromUrl);
+      setUserType(roleFromUrl as UserType);
     }
   }, [roleFromUrl]);
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
+    email: emailFromUrl || "",
     phone: "",
     password: "",
     confirmPassword: "",
@@ -75,11 +79,16 @@ const Register = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(formData.email, formData.password, formData.name, {
-      user_type: userType,
+    const metadata: Record<string, string | undefined> = {
+      user_type: isInvite ? 'franchise_admin' : userType,
       city_id: cityIdFromUrl || undefined,
       phone: formData.phone || undefined,
-    });
+    };
+    if (inviteId) {
+      metadata.franchise_invite_id = inviteId;
+    }
+
+    const { error } = await signUp(formData.email, formData.password, formData.name, metadata);
 
     if (!error) {
       toast({
