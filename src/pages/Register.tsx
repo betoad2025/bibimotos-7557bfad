@@ -24,16 +24,18 @@ const Register = () => {
   const inviteId = searchParams.get('invite');
   const emailFromUrl = searchParams.get('email');
   
+  const isInvite = roleFromUrl === 'franchise_admin' && !!inviteId;
+  
   const [userType, setUserType] = useState<UserType>(
     roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl) 
-      ? roleFromUrl 
+      ? roleFromUrl as UserType 
       : "passenger"
   );
 
   // Sync with URL param changes
   useEffect(() => {
     if (roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl)) {
-      setUserType(roleFromUrl);
+      setUserType(roleFromUrl as UserType);
     }
   }, [roleFromUrl]);
   const [formData, setFormData] = useState({
