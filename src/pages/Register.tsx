@@ -79,12 +79,16 @@ const Register = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(formData.email, formData.password, formData.name, {
-      user_type: roleFromUrl === 'franchise_admin' ? 'passenger' : userType,
+    const metadata: Record<string, string | undefined> = {
+      user_type: isInvite ? 'franchise_admin' : userType,
       city_id: cityIdFromUrl || undefined,
       phone: formData.phone || undefined,
-      franchise_invite_id: inviteId || undefined,
-    });
+    };
+    if (inviteId) {
+      metadata.franchise_invite_id = inviteId;
+    }
+
+    const { error } = await signUp(formData.email, formData.password, formData.name, metadata);
 
     if (!error) {
       toast({
