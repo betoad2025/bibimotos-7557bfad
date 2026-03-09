@@ -1996,6 +1996,7 @@ export type Database = {
           kyc_verified_at: string | null
           person_type: Database["public"]["Enums"]["person_type"] | null
           phone: string | null
+          profile_complete: boolean | null
           push_subscription: Json | null
           rg: string | null
           selfie_url: string | null
@@ -2022,6 +2023,7 @@ export type Database = {
           kyc_verified_at?: string | null
           person_type?: Database["public"]["Enums"]["person_type"] | null
           phone?: string | null
+          profile_complete?: boolean | null
           push_subscription?: Json | null
           rg?: string | null
           selfie_url?: string | null
@@ -2048,6 +2050,7 @@ export type Database = {
           kyc_verified_at?: string | null
           person_type?: Database["public"]["Enums"]["person_type"] | null
           phone?: string | null
+          profile_complete?: boolean | null
           push_subscription?: Json | null
           rg?: string | null
           selfie_url?: string | null
