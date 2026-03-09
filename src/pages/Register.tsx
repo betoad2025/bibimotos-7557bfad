@@ -18,9 +18,11 @@ const Register = () => {
   const { signUp } = useAuth();
   const { toast } = useToast();
   
-  // Read role and city_id from URL params
-  const roleFromUrl = searchParams.get('role') as UserType | null;
+  // Read role, city_id and invite from URL params
+  const roleFromUrl = searchParams.get('role') as UserType | 'franchise_admin' | null;
   const cityIdFromUrl = searchParams.get('city_id');
+  const inviteId = searchParams.get('invite');
+  const emailFromUrl = searchParams.get('email');
   
   const [userType, setUserType] = useState<UserType>(
     roleFromUrl && ['passenger', 'driver', 'merchant'].includes(roleFromUrl) 
