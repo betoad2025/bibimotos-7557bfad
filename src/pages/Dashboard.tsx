@@ -17,6 +17,7 @@ import logoFull from "@/assets/logo-full.png";
 export default function Dashboard() {
   const { user, loading, roles, isSuperAdmin, isFranchiseAdmin, isDriver, isPassenger, isMerchant, signOut } = useAuth();
   const navigate = useNavigate();
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,27 +25,8 @@ export default function Dashboard() {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <img src={logoFull} alt="Bibi Motos" className="h-16 animate-pulse" />
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground text-sm">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  // Check profile completeness for non-super-admins
-  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
-
   useEffect(() => {
-    if (!user || isSuperAdmin) {
+    if (!user || loading || isSuperAdmin) {
       setProfileComplete(true);
       return;
     }
@@ -66,7 +48,23 @@ export default function Dashboard() {
       }
     };
     checkProfile();
-  }, [user, isSuperAdmin]);
+  }, [user, loading, isSuperAdmin]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <img src={logoFull} alt="Bibi Motos" className="h-16 animate-pulse" />
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground text-sm">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   // If profile is incomplete and user has a role, force them to complete registration
   if (profileComplete === false && roles.length > 0) {
