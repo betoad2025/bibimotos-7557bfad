@@ -653,10 +653,15 @@ export function FranchiseTransferManagement() {
             <Button
               onClick={handleTransfer}
               className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={!transferForm.newOwnerId || transferForm.isLead}
+              disabled={!transferForm.newOwnerId || inviteLoading}
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Confirmar Transferência
+              {inviteLoading ? (
+                <><span className="animate-spin mr-2">⏳</span> Enviando convite...</>
+              ) : transferForm.isLead ? (
+                <><Mail className="h-4 w-4 mr-2" />Enviar Convite e Transferir</>
+              ) : (
+                <><CheckCircle2 className="h-4 w-4 mr-2" />Confirmar Transferência</>
+              )}
             </Button>
           </div>
         </DialogContent>
