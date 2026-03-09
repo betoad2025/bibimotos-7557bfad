@@ -253,14 +253,59 @@ export function FranchiseTransferManagement() {
     }));
   };
 
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  const handleSendInvite = async () => {
+    if (!transferDialog.franchise || !selectedCandidate) return;
+    
+    if (!selectedCandidate.email) {
+      toast.error("O lead não possui email cadastrado. Não é possível enviar convite.");
+      return;
+    }
+
+    setInviteLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke("send-franchise-invite", {
+        body: {
+          franchise_id: transferDialog.franchise.id,
+          lead_id: selectedCandidate.type === "lead" ? selectedCandidate.id : undefined,
+          email: selectedCandidate.email,
+          phone: selectedCandidate.phone,
+          name: selectedCandidate.name,
+          notes: transferForm.notes || undefined,
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      
+      const result = response.data;
+      if (result?.success) {
+        if (result.method === "direct_transfer") {
+          toast.success(result.message);
+        } else {
+          toast.success(result.message);
+        }
+        setTransferDialog({ open: false, franchise: null });
+        fetchData();
+      } else {
+        throw new Error(result?.error || "Erro desconhecido");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar convite");
+    }
+    setInviteLoading(false);
+  };
+
   const handleTransfer = async () => {
     if (!transferDialog.franchise || !transferForm.newOwnerId) {
       toast.error("Selecione o novo proprietário");
       return;
     }
 
+    // If it's a lead, send invite instead of blocking
     if (transferForm.isLead) {
-      toast.error("Leads precisam se cadastrar na plataforma antes de receber uma franquia. Converta o lead em usuário primeiro.");
+      await handleSendInvite();
       return;
     }
 
@@ -275,7 +320,6 @@ export function FranchiseTransferManagement() {
 
       const result = data as any;
       if (result.success) {
-        // Mark the new owner's profile as needing completion check
         await supabase
           .from("profiles")
           .update({ profile_complete: false })
