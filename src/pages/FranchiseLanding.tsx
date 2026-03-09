@@ -141,18 +141,59 @@ export default function FranchiseLanding() {
     }
     setIsSubmitting(true);
     try {
+      // Check for existing lead with same phone or email
+      const phone = leadForm.phone.replace(/\D/g, '');
+      const { data: existingByPhone } = await supabase
+        .from('franchise_leads')
+        .select('id, name, city')
+        .eq('phone', phone)
+        .maybeSingle();
+
+      if (existingByPhone) {
+        toast({ 
+          title: "Cadastro já existe!", 
+          description: `${existingByPhone.name} já está registrado(a) para ${existingByPhone.city}. Nossa equipe entrará em contato.`,
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (leadForm.email) {
+        const { data: existingByEmail } = await supabase
+          .from('franchise_leads')
+          .select('id, name, city')
+          .eq('email', leadForm.email)
+          .maybeSingle();
+
+        if (existingByEmail) {
+          toast({ 
+            title: "Email já cadastrado!", 
+            description: `Este email já está registrado para ${existingByEmail.city}.`,
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const { error } = await supabase.from('franchise_leads').insert({
         name: leadForm.name,
-        phone: leadForm.phone,
+        phone: phone,
         email: leadForm.email || null,
         city: leadForm.city,
         state: leadForm.state || null,
+        source_page: 'franquia',
       });
       
-      if (error) throw error;
-      
-      toast({ title: "Interesse registrado!", description: "Nossa equipe entrará em contato em breve." });
-      setLeadForm({ name: '', phone: '', email: '', city: '', state: '' });
+      if (error) {
+        if (error.code === '23505') {
+          toast({ title: "Cadastro já existe!", description: "Você já registrou interesse. Nossa equipe entrará em contato.", variant: "destructive" });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({ title: "Interesse registrado!", description: "Nossa equipe entrará em contato em breve." });
+        setLeadForm({ name: '', phone: '', email: '', city: '', state: '' });
+      }
     } catch (error) {
       toast({ title: "Erro ao enviar", description: "Tente novamente", variant: "destructive" });
     }
