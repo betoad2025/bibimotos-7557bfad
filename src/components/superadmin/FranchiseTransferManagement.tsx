@@ -625,14 +625,17 @@ export function FranchiseTransferManagement() {
               )}
             </div>
 
-            {/* Lead warning */}
+            {/* Lead invite info */}
             {transferForm.isLead && (
-              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Este é um <strong>lead</strong> e ainda não possui conta na plataforma. 
-                  Ele precisa se cadastrar primeiro. Depois do cadastro, volte aqui para transferir a franquia.
-                </p>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
+                <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="font-medium mb-1">Este é um lead — será enviado um convite por e-mail</p>
+                  <p>
+                    O convidado receberá um link para criar a conta. Ao completar o cadastro, 
+                    a franquia será transferida automaticamente, sem necessidade de aprovação.
+                  </p>
+                </div>
               </div>
             )}
 
