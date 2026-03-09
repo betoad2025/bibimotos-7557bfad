@@ -19,6 +19,7 @@ export default function CompleteRegistration() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [step, setStep] = useState<Step>('type');
   const [isLoading, setIsLoading] = useState(false);
