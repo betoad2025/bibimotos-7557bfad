@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import {
   ArrowRightLeft, Building2, Users, Bike, Store, Search,
-  AlertTriangle, CheckCircle2, History, Crown, User, Megaphone
+  AlertTriangle, CheckCircle2, History, Crown, User, Megaphone, Mail
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
