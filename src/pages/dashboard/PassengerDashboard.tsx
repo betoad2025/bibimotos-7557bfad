@@ -3,10 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { UserAvatar } from "@/components/profile/UserAvatar";
-import { ReputationBadge } from "@/components/profile/ReputationBadge";
-import { RideRequestForm } from "@/components/ride/RideRequestForm";
 import { RideTrackingCard } from "@/components/ride/RideTrackingCard";
 import { RideMapTracker } from "@/components/ride/RideMapTracker";
 import { EnhancedRatingModal } from "@/components/ride/EnhancedRatingModal";
@@ -15,13 +11,13 @@ import { SOSButton } from "@/components/ride/SOSButton";
 import { InAppPayment } from "@/components/payment/InAppPayment";
 import { useRideRealtime } from "@/hooks/useRideRealtime";
 import { useRideService } from "@/hooks/useRideService";
+import { BottomNavBar, type PassengerTab } from "@/components/passenger/BottomNavBar";
+import { PassengerHomeTab } from "@/components/passenger/PassengerHomeTab";
+import { PassengerActivityTab } from "@/components/passenger/PassengerActivityTab";
+import { PassengerWalletTab } from "@/components/passenger/PassengerWalletTab";
+import { PassengerProfileTab } from "@/components/passenger/PassengerProfileTab";
 import logoImage from "@/assets/logo-simbolo.png";
-import { History, User, LogOut, MapPin, Wallet } from "lucide-react";
-import { LoyaltyProgressCard } from "@/components/passenger/LoyaltyProgressCard";
-import { FavoriteAddresses } from "@/components/passenger/FavoriteAddresses";
-import { RideHistory } from "@/components/ride/RideHistory";
-import { UserWalletCard } from "@/components/wallet/UserWalletCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin } from "lucide-react";
 
 interface PassengerData {
   id: string;
@@ -32,9 +28,9 @@ interface PassengerData {
 
 export default function PassengerDashboard() {
   const { user, profile, signOut } = useAuth();
-  const { toast } = useToast();
   const { rateRide, completeRide } = useRideService();
-  
+
+  const [activeTab, setActiveTab] = useState<PassengerTab>("home");
   const [passengerData, setPassengerData] = useState<PassengerData | null>(null);
   const [cityInfo, setCityInfo] = useState<{ name: string; state: string } | null>(null);
   const [currentRideId, setCurrentRideId] = useState<string | null>(null);
@@ -46,28 +42,22 @@ export default function PassengerDashboard() {
   const { ride, driver, loading: rideLoading } = useRideRealtime(currentRideId);
 
   useEffect(() => {
-    if (user) {
-      fetchPassengerData();
-    }
+    if (user) fetchPassengerData();
   }, [user]);
 
-  // Check for active ride on mount
   useEffect(() => {
-    if (passengerData?.id) {
-      checkActiveRide();
-    }
+    if (passengerData?.id) checkActiveRide();
   }, [passengerData?.id]);
 
   const fetchPassengerData = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("passengers")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      
+
       if (data) {
         setPassengerData({
           id: data.id,
@@ -76,13 +66,12 @@ export default function PassengerDashboard() {
           franchise_id: data.franchise_id,
         });
 
-        // Fetch city info
         const { data: franchise } = await supabase
-          .from('franchises')
-          .select('cities(name, state)')
-          .eq('id', data.franchise_id)
+          .from("franchises")
+          .select("cities(name, state)")
+          .eq("id", data.franchise_id)
           .single();
-        
+
         if (franchise?.cities) {
           const city = franchise.cities as unknown as { name: string; state: string };
           setCityInfo(city);
@@ -95,7 +84,6 @@ export default function PassengerDashboard() {
 
   const checkActiveRide = async () => {
     if (!passengerData?.id) return;
-
     try {
       const { data } = await supabase
         .from("rides")
@@ -106,26 +94,17 @@ export default function PassengerDashboard() {
         .limit(1)
         .maybeSingle();
 
-      if (data) {
-        setCurrentRideId(data.id);
-      }
+      if (data) setCurrentRideId(data.id);
     } catch (error) {
       console.error("Error checking active ride:", error);
     }
   };
 
-  const handleRideCreated = (rideId: string) => {
-    setCurrentRideId(rideId);
-  };
+  const handleRideCreated = (rideId: string) => setCurrentRideId(rideId);
 
   const handleCompleteRide = async () => {
     if (!ride) return;
-    
-    const success = await completeRide(
-      ride.id,
-      ride.final_price || ride.estimated_price || 0
-    );
-    
+    const success = await completeRide(ride.id, ride.final_price || ride.estimated_price || 0);
     if (success) {
       setRideJustCompleted(true);
       setShowPaymentModal(true);
@@ -139,10 +118,8 @@ export default function PassengerDashboard() {
 
   const handleRatingSubmit = async (rating: number) => {
     if (!ride) return;
-    
     await rateRide(ride.id, rating, false);
     setShowRatingModal(false);
-    // Show tip modal after rating
     setShowTipModal(true);
   };
 
@@ -152,77 +129,36 @@ export default function PassengerDashboard() {
     setCurrentRideId(null);
   };
 
-  const handleCancelRide = () => {
-    setCurrentRideId(null);
-  };
+  const handleCancelRide = () => setCurrentRideId(null);
 
-  // Determine if there's an active ride
   const hasActiveRide = currentRideId && ride && !["completed", "cancelled"].includes(ride.status || "");
+
+  // Force home tab when ride is active
+  const effectiveTab = hasActiveRide ? "home" : activeTab;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
+      {/* Minimal Header */}
+      <header className="bg-card/80 backdrop-blur-xl border-b border-border/50 sticky top-0 z-20">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {cityInfo && (
-                  <>
-                    <MapPin className="h-3 w-3" />
-                    <span>{cityInfo.name} - {cityInfo.state}</span>
-                    <span className="mx-0.5">•</span>
-                  </>
-                )}
-                Passageiro
-              </p>
-            </div>
-          </div>
           <div className="flex items-center gap-2">
-            <UserAvatar
-              avatarUrl={profile?.avatar_url}
-              name={profile?.full_name || "Usuário"}
-              rating={passengerData?.rating}
-              totalRides={passengerData?.total_rides}
-              size="sm"
-            />
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="h-5 w-5" />
-            </Button>
+            <img src={logoImage} alt="Bibi Motos" className="h-8 w-8" />
+            <span className="font-bold text-sm">Bibi Motos</span>
           </div>
+          {cityInfo && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {cityInfo.name}
+            </span>
+          )}
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Profile Summary */}
-        <Card className="border-2">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <UserAvatar
-                avatarUrl={profile?.avatar_url}
-                name={profile?.full_name || "Usuário"}
-                rating={passengerData?.rating || 5}
-                totalRides={passengerData?.total_rides || 0}
-                size="lg"
-              />
-              <div className="flex-1">
-                <h2 className="font-bold text-lg">{profile?.full_name}</h2>
-                <p className="text-sm text-muted-foreground">{profile?.email}</p>
-                {passengerData && (
-                  <p className="text-sm text-muted-foreground">
-                    {passengerData.total_rides} viagens realizadas
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Ride with Map */}
+      {/* Main Content */}
+      <main className="max-w-lg mx-auto px-4 py-4 pb-24">
+        {/* Active Ride takes over */}
         {hasActiveRide ? (
-          <>
-            {/* Real-time map tracker */}
+          <div className="space-y-4">
             <RideMapTracker
               rideId={ride.id}
               originLat={Number(ride.origin_lat) || 0}
@@ -241,14 +177,8 @@ export default function PassengerDashboard() {
               onComplete={handleCompleteRide}
               onRate={() => setShowRatingModal(true)}
             />
-          </>
-        ) : passengerData ? (
-          <RideRequestForm
-            franchiseId={passengerData.franchise_id}
-            passengerId={passengerData.id}
-            onRideCreated={handleRideCreated}
-          />
-        ) : (
+          </div>
+        ) : !passengerData ? (
           <Card className="border-2">
             <CardContent className="py-8 text-center space-y-4">
               <MapPin className="h-12 w-12 mx-auto text-primary/50" />
@@ -256,58 +186,46 @@ export default function PassengerDashboard() {
               <p className="text-muted-foreground">
                 Seu cadastro está sendo processado. Complete seus dados para solicitar sua primeira corrida.
               </p>
-              <Button onClick={() => window.location.href = "/complete-registration"}>
+              <Button onClick={() => (window.location.href = "/complete-registration")}>
                 Completar Cadastro
               </Button>
             </CardContent>
           </Card>
-        )}
-
-        {/* Extra features when idle */}
-        {!hasActiveRide && passengerData && (
-          <Tabs defaultValue="ride" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="ride">🏍️ Corrida</TabsTrigger>
-              <TabsTrigger value="wallet">💳 Carteira</TabsTrigger>
-              <TabsTrigger value="places">📍 Lugares</TabsTrigger>
-              <TabsTrigger value="history">📜 Histórico</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="ride" className="space-y-4">
-              <LoyaltyProgressCard
-                userId={user?.id || ""}
-                franchiseId={passengerData.franchise_id}
+        ) : (
+          <>
+            {effectiveTab === "home" && (
+              <PassengerHomeTab
+                passengerData={passengerData}
+                cityInfo={cityInfo}
+                userName={profile?.full_name || "Passageiro"}
+                favoriteAddresses={[]}
+                onRideCreated={handleRideCreated}
+                onNavigateToTab={(tab) => setActiveTab(tab as PassengerTab)}
               />
-              <ReputationBadge
-                rating={passengerData.rating}
-                totalRides={passengerData.total_rides}
-                type="passenger"
-              />
-            </TabsContent>
-            
-            <TabsContent value="wallet">
-              <UserWalletCard />
-            </TabsContent>
-            
-            <TabsContent value="places">
-              <FavoriteAddresses
+            )}
+            {effectiveTab === "activity" && (
+              <PassengerActivityTab
                 userId={user?.id || ""}
-                franchiseId={passengerData.franchise_id}
-              />
-            </TabsContent>
-            
-            <TabsContent value="history">
-              <RideHistory
-                userId={user?.id || ""}
-                userType="passenger"
                 passengerId={passengerData.id}
               />
-            </TabsContent>
-          </Tabs>
+            )}
+            {effectiveTab === "wallet" && <PassengerWalletTab />}
+            {effectiveTab === "profile" && (
+              <PassengerProfileTab
+                profile={profile}
+                passengerData={passengerData}
+                userId={user?.id || ""}
+                onSignOut={signOut}
+              />
+            )}
+          </>
         )}
       </main>
 
-      {/* Floating SOS Button during active ride */}
+      {/* Bottom Navigation */}
+      <BottomNavBar activeTab={effectiveTab} onTabChange={setActiveTab} />
+
+      {/* Floating SOS during active ride */}
       {hasActiveRide && passengerData && (
         <SOSButton
           rideId={ride.id}
@@ -317,7 +235,7 @@ export default function PassengerDashboard() {
         />
       )}
 
-      {/* Payment Modal after ride completion */}
+      {/* Payment Modal */}
       {showPaymentModal && ride && (
         <InAppPayment
           open={showPaymentModal}
@@ -350,7 +268,7 @@ export default function PassengerDashboard() {
         />
       )}
 
-      {/* Tip Modal after rating */}
+      {/* Tip Modal */}
       {showTipModal && driver && ride && passengerData && (
         <TipModal
           open={showTipModal}
