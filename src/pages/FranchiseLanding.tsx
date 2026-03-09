@@ -182,7 +182,7 @@ export default function FranchiseLanding() {
         city: leadForm.city,
         state: leadForm.state || null,
         source_page: 'franquia',
-      });
+      } as any);
       
       if (error) {
         if (error.code === '23505') {
