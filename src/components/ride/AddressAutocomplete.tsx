@@ -48,7 +48,7 @@ export function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sessionTokenRef = useRef<string>(crypto.randomUUID());
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   
   const { autocomplete, geocode, getCurrentLocation, reverseGeocode, loading } = useGoogleMaps();
 
