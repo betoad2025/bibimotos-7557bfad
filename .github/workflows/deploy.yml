@@ -22,6 +22,14 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Override .env with production Supabase credentials
+        run: |
+          cat > .env << 'ENVEOF'
+          VITE_SUPABASE_PROJECT_ID="awfuqmmolozqwwdtepap"
+          VITE_SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}"
+          VITE_SUPABASE_PUBLISHABLE_KEY="${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}"
+          ENVEOF
+
       - name: Build project
         run: npm run build
         env:
@@ -34,10 +42,11 @@ jobs:
           Options -MultiViews
           RewriteEngine On
           RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
           RewriteRule ^ index.html [QSA,L]
           HTEOF
 
-      - name: Deploy to Hostinger via SCP
+      - name: Deploy to Hostinger via SSH
         uses: appleboy/scp-action@v0.1.7
         with:
           host: srv1841.hstgr.io
