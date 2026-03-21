@@ -26,7 +26,7 @@ jobs:
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Create .htaccess for SPA routing
         run: |
@@ -37,14 +37,14 @@ jobs:
           RewriteRule ^ index.html [QSA,L]
           HTEOF
 
-      - name: Deploy via SSH
+      - name: Deploy to Hostinger via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: 82.180.156.244
+          host: srv1841.hstgr.io
           username: u557673874
           password: ${{ secrets.SSH_PASSWORD }}
           port: 65002
-          source: "dist/"
-          target: /home/u557673874/domains/bibimotos.com.br/public_html/
+          source: "dist/*"
+          target: "/home/u557673874/domains/bibimotos.com.br/public_html"
           strip_components: 1
           rm: true
