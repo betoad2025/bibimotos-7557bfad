@@ -78,8 +78,9 @@ jobs:
 
       - name: Instalar Supabase CLI
         run: |
-          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
-          sudo mv supabase /usr/local/bin/supabase
+          rm -f supabase
+          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xzf -
+          sudo mv -f supabase /usr/local/bin/supabase
           supabase --version
 
       - name: Descobrir funções automaticamente e fazer deploy
