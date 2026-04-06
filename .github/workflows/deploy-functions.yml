@@ -26,7 +26,7 @@ jobs:
 
       - name: Verificar ausência de referências ao Cloud Lovable e IA Gateway
         run: |
-          echo "🔍 Verificando referências proibidas ao Cloud Lovable e IA Gateway..."
+          echo "Verificando referencias proibidas ao Cloud Lovable e IA Gateway..."
           VIOLATIONS=0
           FORBIDDEN_PATTERNS=(
             "lovable\.app"
@@ -54,15 +54,15 @@ jobs:
           for PATTERN in "${FORBIDDEN_PATTERNS[@]}"; do
             MATCHES=$(echo "$FILES_TO_CHECK" | xargs grep -l "$PATTERN" 2>/dev/null || true)
             if [ -n "$MATCHES" ]; then
-              echo "❌ VIOLAÇÃO: '$PATTERN' encontrado em: $MATCHES"
+              echo "VIOLACAO: '$PATTERN' encontrado em: $MATCHES"
               VIOLATIONS=$((VIOLATIONS + 1))
             fi
           done
           if [ "$VIOLATIONS" -gt 0 ]; then
-            echo "🚫 BLOQUEADO: $VIOLATIONS referência(s) proibida(s). Deploy cancelado."
+            echo "BLOQUEADO: $VIOLATIONS referencia(s) proibida(s). Deploy cancelado."
             exit 1
           fi
-          echo "✅ Infraestrutura 100% privada. Prosseguindo com deploy."
+          echo "Infraestrutura 100% privada. Prosseguindo com deploy."
 
   deploy-functions:
     name: Deploy Edge Functions no Supabase Privado
@@ -78,65 +78,60 @@ jobs:
 
       - name: Instalar Supabase CLI
         run: |
-          rm -f supabase
-          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xzf -
-          sudo mv -f supabase /usr/local/bin/supabase
+          mkdir -p /tmp/supabase-cli
+          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xzf - -C /tmp/supabase-cli
+          sudo mv -f /tmp/supabase-cli/supabase /usr/local/bin/supabase
           supabase --version
 
-      - name: Descobrir funções automaticamente e fazer deploy
+      - name: Descobrir funcoes automaticamente e fazer deploy
         run: |
-          echo "🚀 Iniciando deploy das Edge Functions..."
-          echo "   Projeto Supabase: $PROJECT_REF (Bibi Motos)"
-          echo ""
+          echo "Iniciando deploy das Edge Functions..."
+          echo "Projeto Supabase: $PROJECT_REF (Bibi Motos)"
           FUNCTIONS_DIR="supabase/functions"
           DEPLOYED=0
           FAILED=0
           SKIPPED=0
           if [ ! -d "$FUNCTIONS_DIR" ]; then
-            echo "⚠️ Diretório $FUNCTIONS_DIR não encontrado. Nenhuma função para deployar."
+            echo "Diretorio $FUNCTIONS_DIR nao encontrado. Nenhuma funcao para deployar."
             exit 0
           fi
           for FUNC_DIR in "$FUNCTIONS_DIR"/*/; do
             FUNC_NAME=$(basename "$FUNC_DIR")
             if [[ "$FUNC_NAME" == _* ]]; then
-              echo "⏭️  Ignorando diretório de suporte: $FUNC_NAME"
+              echo "Ignorando diretorio de suporte: $FUNC_NAME"
               SKIPPED=$((SKIPPED + 1))
               continue
             fi
             if [ ! -f "$FUNC_DIR/index.ts" ]; then
-              echo "⚠️  Ignorando $FUNC_NAME (sem index.ts)"
+              echo "Ignorando $FUNC_NAME (sem index.ts)"
               SKIPPED=$((SKIPPED + 1))
               continue
             fi
-            echo "📦 Deployando: $FUNC_NAME"
+            echo "Deployando: $FUNC_NAME"
             if supabase functions deploy "$FUNC_NAME" \
               --project-ref "$PROJECT_REF" \
               --no-verify-jwt 2>&1; then
-              echo "   ✅ $FUNC_NAME deployado com sucesso"
+              echo "$FUNC_NAME deployado com sucesso"
               DEPLOYED=$((DEPLOYED + 1))
             else
-              echo "   ❌ Falha ao deployar $FUNC_NAME"
+              echo "Falha ao deployar $FUNC_NAME"
               FAILED=$((FAILED + 1))
             fi
           done
-          echo ""
-          echo "📊 Resumo do deploy:"
-          echo "   ✅ Deployadas: $DEPLOYED"
-          echo "   ❌ Falhas:     $FAILED"
-          echo "   ⏭️  Ignoradas:  $SKIPPED"
+          echo "Resumo: Deployadas=$DEPLOYED Falhas=$FAILED Ignoradas=$SKIPPED"
           if [ "$FAILED" -gt 0 ]; then
-            echo "🚫 Deploy concluído com $FAILED falha(s)."
+            echo "Deploy concluido com $FAILED falha(s)."
             exit 1
           fi
-          echo "🎉 Deploy concluído com sucesso! $DEPLOYED função(ões) deployada(s)."
+          echo "Deploy concluido com sucesso! $DEPLOYED funcao(oes) deployada(s)."
 
       - name: Linkar ao projeto Supabase privado
         run: |
-          echo "🔗 Linkando ao projeto Supabase $PROJECT_REF..."
+          echo "Linkando ao projeto Supabase $PROJECT_REF..."
           supabase link --project-ref "$PROJECT_REF" || true
 
       - name: Aplicar migrations no banco privado
         run: |
-          echo "🗄️ Aplicando migrations no banco Bibi Motos ($PROJECT_REF)..."
-          supabase db push --yes || echo "⚠️ Aviso: Algumas migrations podem já estar aplicadas. Continuando..."
-          echo "✅ Migrations processadas."
+          echo "Aplicando migrations no banco Bibi Motos ($PROJECT_REF)..."
+          supabase db push --yes || echo "Aviso: Algumas migrations podem ja estar aplicadas. Continuando..."
+          echo "Migrations processadas."
