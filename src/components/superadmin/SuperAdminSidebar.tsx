@@ -1,6 +1,6 @@
 import { 
   MapPin, Building2, Users, Crown, BarChart3, Activity, Shield, Megaphone,
-  CreditCard, ArrowRightLeft, DollarSign, ChevronLeft
+  CreditCard, ArrowRightLeft, DollarSign, ChevronLeft, Settings
 } from "lucide-react";
 import {
   Sidebar,
