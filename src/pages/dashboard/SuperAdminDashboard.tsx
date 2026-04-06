@@ -120,6 +120,8 @@ export default function SuperAdminDashboard() {
         return <GlobalMarketingPanel />;
       case "leads":
         return <LeadsManagement />;
+      case "settings":
+        return <PlatformSettingsPanel />;
       default:
         return <OverviewCharts franchises={franchises} cities={cities} />;
     }

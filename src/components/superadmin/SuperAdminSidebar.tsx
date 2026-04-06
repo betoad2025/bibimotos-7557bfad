@@ -57,6 +57,12 @@ const menuItems = [
       { id: "marketing", label: "Marketing", icon: Megaphone },
       { id: "leads", label: "Leads", icon: Crown, alertKey: "pendingLeads" as const },
     ]
+  },
+  {
+    group: "Sistema",
+    items: [
+      { id: "settings", label: "Configurações", icon: Settings },
+    ]
   }
 ];
 
