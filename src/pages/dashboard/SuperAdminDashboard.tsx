@@ -16,6 +16,7 @@ import { FranchiseBillingManagement } from "@/components/superadmin/FranchiseBil
 import { FranchiseTransferManagement } from "@/components/superadmin/FranchiseTransferManagement";
 import { FranchisePricingConfig } from "@/components/superadmin/FranchisePricingConfig";
 import { DriverTransferRequests } from "@/components/superadmin/DriverTransferRequests";
+import { PlatformSettingsPanel } from "@/components/superadmin/PlatformSettingsPanel";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -119,6 +120,8 @@ export default function SuperAdminDashboard() {
         return <GlobalMarketingPanel />;
       case "leads":
         return <LeadsManagement />;
+      case "settings":
+        return <PlatformSettingsPanel />;
       default:
         return <OverviewCharts franchises={franchises} cities={cities} />;
     }

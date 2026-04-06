@@ -1,6 +1,6 @@
 import { 
   MapPin, Building2, Users, Crown, BarChart3, Activity, Shield, Megaphone,
-  CreditCard, ArrowRightLeft, DollarSign, ChevronLeft
+  CreditCard, ArrowRightLeft, DollarSign, ChevronLeft, Settings
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +56,12 @@ const menuItems = [
     items: [
       { id: "marketing", label: "Marketing", icon: Megaphone },
       { id: "leads", label: "Leads", icon: Crown, alertKey: "pendingLeads" as const },
+    ]
+  },
+  {
+    group: "Sistema",
+    items: [
+      { id: "settings", label: "Configurações", icon: Settings },
     ]
   }
 ];
