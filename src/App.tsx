@@ -27,13 +27,12 @@ const getIsSubdomain = (): boolean => {
   const mainDomains = [
     'bibimotos.com.br',
     'www.bibimotos.com.br',
-    'bibimotos.lovable.app',
     'localhost',
     '127.0.0.1'
   ];
   
-  // Preview do Lovable
-  if (hostname.includes('lovable.app') || hostname.includes('localhost')) {
+  // Ambiente de desenvolvimento local
+  if (hostname.includes('localhost') || hostname === '127.0.0.1') {
     return false;
   }
   

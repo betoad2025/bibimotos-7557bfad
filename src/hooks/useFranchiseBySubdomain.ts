@@ -35,7 +35,7 @@ export function useFranchiseBySubdomain(subdomainParam?: string): SubdomainInfo 
     
     const hostname = window.location.hostname;
     
-    if (hostname.includes('lovable.app') || hostname.includes('localhost')) {
+    if (hostname.includes('localhost') || hostname === '127.0.0.1') {
       return null;
     }
     
