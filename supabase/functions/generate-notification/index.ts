@@ -149,21 +149,33 @@ Retorne APENAS um JSON: {"title": "...", "content": "..."}`;
       throw new Error("Failed to parse AI response");
     }
 
-    if (action === "modify") {
-      const apiKey = await getGoogleAiKey();
-      if (!apiKey) {
-        throw new Error("Google AI API Key não configurada.");
-      }
-
-      const systemPrompt = `Você é um especialista em comunicação corporativa para a Bibi Motos.
+     if (action === "modify") {
+       const openaiKey = await getApiKey("openai");
+       const googleAiKey = await getApiKey("google_ai");
+       
+       if (!openaiKey && !googleAiKey) {
+         throw new Error("Nenhuma API Key de IA configurada.");
+       }
+ 
+       const systemPrompt = `Você é um especialista em comunicação corporativa para a Bibi Motos.
 Modifique o conteúdo conforme solicitado, mantendo profissionalismo.
 Retorne APENAS um JSON: {"title": "...", "content": "..."}`;
 
-      const text = await callGeminiAI(
-        apiKey,
-        systemPrompt,
-        `Conteúdo atual:\nTítulo: ${content.title}\nTexto: ${content.content}\n\nModificação: ${prompt}`
-      );
+       let text = "{}";
+       if (openaiKey) {
+         text = await callOpenAI(
+           openaiKey,
+           systemPrompt,
+           `Conteúdo atual:\nTítulo: ${content.title}\nTexto: ${content.content}\n\nModificação: ${prompt}`
+         );
+       } else if (googleAiKey) {
+         text = await callGeminiAI(
+           googleAiKey,
+           systemPrompt,
+           `Conteúdo atual:\nTítulo: ${content.title}\nTexto: ${content.content}\n\nModificação: ${prompt}`
+         );
+       }
+ 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const modified = JSON.parse(jsonMatch[0]);
