@@ -49,14 +49,47 @@ async function sendSMS(supabase: any, phone: string, message: string) {
   }
 }
 
-async function extractDocumentData(supabase: any, imageUrls: string[]): Promise<any> {
-  const googleAiKey = await getApiKey(supabase, "google_ai");
-  if (!googleAiKey) {
-    console.log("Google AI API Key não configurada, pulando extração por IA");
-    return {};
-  }
-
-  try {
+ async function callOpenAI(apiKey: string, prompt: string, imageUrls: string[]): Promise<string> {
+   const messages = [
+     {
+       role: "user",
+       content: [
+         { type: "text", text: prompt },
+         ...imageUrls.filter(Boolean).map(url => ({
+           type: "image_url",
+           image_url: { url: url }
+         }))
+       ]
+     }
+   ];
+ 
+   const response = await fetch("https://api.openai.com/v1/chat/completions", {
+     method: "POST",
+     headers: {
+       "Content-Type": "application/json",
+       "Authorization": `Bearer ${apiKey}`,
+     },
+     body: JSON.stringify({
+       model: "gpt-4o",
+       messages: messages,
+       response_format: { type: "json_object" },
+     }),
+   });
+ 
+   const data = await response.json();
+   return data.choices?.[0]?.message?.content || "{}";
+ }
+ 
+ async function extractDocumentData(supabase: any, imageUrls: string[]): Promise<any> {
+   const googleAiKey = await getApiKey(supabase, "google_ai");
+   const openaiKey = await getApiKey(supabase, "openai");
+   
+   if (!googleAiKey && !openaiKey) {
+     console.log("Nenhuma API Key de IA configurada, pulando extração");
+     return {};
+   }
+ 
+   try {
     const prompt = `Analise as imagens de documentos enviadas e extraia as seguintes informações em JSON:
 - nome_completo: nome do motorista
 - cpf: número do CPF
@@ -79,20 +112,36 @@ Retorne APENAS o JSON, sem explicações.`;
       });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleAiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts }],
-          generationConfig: { maxOutputTokens: 1000 },
-        }),
-      }
-    );
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+     let text = "{}";
+     if (openaiKey) {
+       text = await callOpenAI(openaiKey, prompt, imageUrls);
+     } else if (googleAiKey) {
+       const parts: any[] = [{ text: prompt }];
+       for (const url of imageUrls.filter(Boolean)) {
+         parts.push({
+           inline_data: {
+             mime_type: "image/jpeg",
+             data: await fetchImageAsBase64(url),
+           },
+         });
+       }
+ 
+       const response = await fetch(
+         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleAiKey}`,
+         {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({
+             contents: [{ role: "user", parts }],
+             generationConfig: { maxOutputTokens: 1000 },
+           }),
+         }
+       );
+ 
+       const data = await response.json();
+       text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+     }
+ 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
     return {};
