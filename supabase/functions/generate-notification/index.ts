@@ -6,25 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function getGoogleAiKey(): Promise<string | null> {
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data } = await supabase
-      .from("default_api_keys")
-      .select("api_key_encrypted")
-      .eq("service_name", "google_ai")
-      .eq("environment", "production")
-      .eq("is_active", true)
-      .maybeSingle();
-
-    return data?.api_key_encrypted || null;
-  } catch {
-    return null;
-  }
-}
+ async function getApiKey(serviceName: string): Promise<string | null> {
+   try {
+     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+ 
+     const { data } = await supabase
+       .from("default_api_keys")
+       .select("api_key_encrypted")
+       .eq("service_name", serviceName)
+       .eq("environment", "production")
+       .eq("is_active", true)
+       .maybeSingle();
+ 
+     return data?.api_key_encrypted || null;
+   } catch {
+     return null;
+   }
+ }
 
 function generatePremiumEmailHTML(title: string, content: string, franchiseName: string): string {
   return `
@@ -71,24 +71,45 @@ function generatePremiumEmailHTML(title: string, content: string, franchiseName:
   `;
 }
 
-async function callGeminiAI(apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
-        ],
-        generationConfig: { maxOutputTokens: 1000 },
-      }),
-    }
-  );
-
-  const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-}
+ async function callGeminiAI(apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> {
+   const response = await fetch(
+     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+     {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({
+         contents: [
+           { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
+         ],
+         generationConfig: { maxOutputTokens: 1000 },
+       }),
+     }
+   );
+ 
+   const data = await response.json();
+   return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+ }
+ 
+ async function callOpenAI(apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> {
+   const response = await fetch("https://api.openai.com/v1/chat/completions", {
+     method: "POST",
+     headers: {
+       "Content-Type": "application/json",
+       "Authorization": `Bearer ${apiKey}`,
+     },
+     body: JSON.stringify({
+       model: "gpt-4o",
+       messages: [
+         { role: "system", content: systemPrompt },
+         { role: "user", content: userPrompt },
+       ],
+       response_format: { type: "json_object" },
+     }),
+   });
+ 
+   const data = await response.json();
+   return data.choices?.[0]?.message?.content || "{}";
+ }
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -98,18 +119,26 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { action, prompt, content, franchise_name } = await req.json();
 
-    if (action === "generate") {
-      const apiKey = await getGoogleAiKey();
-      if (!apiKey) {
-        throw new Error("Google AI API Key não configurada. Acesse Configurações > Chaves de API no painel Super Admin.");
-      }
-
-      const systemPrompt = `Você é um especialista em comunicação corporativa para a Bibi Motos, uma plataforma de mototáxi.
+     if (action === "generate") {
+       const openaiKey = await getApiKey("openai");
+       const googleAiKey = await getApiKey("google_ai");
+       
+       if (!openaiKey && !googleAiKey) {
+         throw new Error("Nenhuma API Key de IA configurada (Google ou OpenAI). Acesse o painel Super Admin.");
+       }
+ 
+       const systemPrompt = `Você é um especialista em comunicação corporativa para a Bibi Motos, uma plataforma de mototáxi.
 Suas mensagens devem ser profissionais mas amigáveis, diretas e engajantes.
 IMPORTANTE: Gere um título CHAMATIVO e CURTO (máximo 50 caracteres).
 Retorne APENAS um JSON: {"title": "...", "content": "..."}`;
 
-      const text = await callGeminiAI(apiKey, systemPrompt, `Gere uma notificação/comunicado:\n\n${prompt}`);
+       let text = "{}";
+       if (openaiKey) {
+         text = await callOpenAI(openaiKey, systemPrompt, `Gere uma notificação/comunicado:\n\n${prompt}`);
+       } else if (googleAiKey) {
+         text = await callGeminiAI(googleAiKey, systemPrompt, `Gere uma notificação/comunicado:\n\n${prompt}`);
+       }
+ 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const generated = JSON.parse(jsonMatch[0]);
