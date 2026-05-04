@@ -26,35 +26,33 @@ serve(async (req) => {
       );
     }
 
-    // Verify caller is super_admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Auth: aceita (a) chamada com header x-admin-secret == ADMIN_RESET_SECRET (uso de emergência),
+    // ou (b) usuário autenticado como super_admin via Authorization Bearer.
+    const adminSecret = Deno.env.get("ADMIN_RESET_SECRET") ?? "";
+    const providedSecret = req.headers.get("x-admin-secret") ?? "";
+    let authorized = false;
+
+    if (adminSecret && providedSecret && providedSecret === adminSecret) {
+      authorized = true;
+    } else {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
+        if (caller) {
+          const { data: roles } = await supabaseAdmin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", caller.id)
+            .eq("role", "super_admin");
+          if (roles && roles.length > 0) authorized = true;
+        }
+      }
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
-    
-    if (!caller) {
+    if (!authorized) {
       return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check super_admin role
-    const { data: roles } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "super_admin");
-
-    if (!roles || roles.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Not authorized - super_admin only" }),
+        JSON.stringify({ error: "Not authorized" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
