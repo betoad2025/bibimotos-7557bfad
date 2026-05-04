@@ -12,8 +12,13 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logoImage} alt="Bibi Motos" className="h-10 w-10" />
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-accent/30 rounded-full blur-md opacity-70 group-hover:opacity-100 transition-opacity" />
+              <div className="relative h-11 w-11 rounded-full bg-white ring-2 ring-accent/60 shadow-md flex items-center justify-center p-1">
+                <img src={logoImage} alt="Bibi Motos" className="h-full w-full object-contain" />
+              </div>
+            </div>
             <span className="text-xl font-bold">
               <span className="text-foreground">Bibi</span>
               <span className="text-accent">Motos</span>
