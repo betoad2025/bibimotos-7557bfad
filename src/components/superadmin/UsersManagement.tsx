@@ -363,7 +363,7 @@ export function UsersManagement() {
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue placeholder="Filtrar por papel" />
                 </SelectTrigger>
                 <SelectContent>
@@ -376,19 +376,20 @@ export function UsersManagement() {
                   <SelectItem value="no_role">Sem papel</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar usuário..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-64"
+                  className="pl-9 w-full sm:w-64"
                 />
               </div>
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="w-full overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -449,26 +450,18 @@ export function UsersManagement() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => { setConvertUser(profile); setConvertFranchiseId(""); }}
-                          title="Converter em Dono de Franquia"
-                          className="text-amber-600 hover:text-amber-700"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setAddRoleUser(profile);
+                            setNewRole("");
+                            setNewRoleFranchiseId("");
+                          }}
+                          className="whitespace-nowrap"
                         >
-                          <Crown className="h-4 w-4" />
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add papel
                         </Button>
-                        <Select onValueChange={(role) => handleAddRole(profile.user_id, role as any)}>
-                          <SelectTrigger className="w-36">
-                            <SelectValue placeholder="Add papel" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {!roles.includes("super_admin") && <SelectItem value="super_admin">Super Admin</SelectItem>}
-                            {!roles.includes("franchise_admin") && <SelectItem value="franchise_admin">Admin Franquia</SelectItem>}
-                            {!roles.includes("driver") && <SelectItem value="driver">Motorista</SelectItem>}
-                            {!roles.includes("passenger") && <SelectItem value="passenger">Passageiro</SelectItem>}
-                            {!roles.includes("merchant") && <SelectItem value="merchant">Lojista</SelectItem>}
-                          </SelectContent>
-                        </Select>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -483,6 +476,7 @@ export function UsersManagement() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
