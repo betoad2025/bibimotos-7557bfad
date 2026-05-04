@@ -284,14 +284,16 @@ export default function FranchiseLanding() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all" />
-                <img src={logoImage} alt="Bibi Motos" className="h-12 w-12 relative z-10" />
+                <div className="absolute -inset-1 bg-amber-300/40 rounded-full blur-lg group-hover:bg-amber-300/60 transition-all" />
+                <div className="relative z-10 h-14 w-14 rounded-full bg-white ring-2 ring-amber-300/70 shadow-xl flex items-center justify-center p-1.5">
+                  <img src={logoImage} alt="Bibi Motos" className="h-full w-full object-contain" />
+                </div>
               </div>
               <div>
-                <h1 className={`text-xl font-black transition-colors ${scrolled ? 'text-foreground' : 'text-white'}`}>
-                  Bibi<span className="text-primary">Motos</span>
+                <h1 className={`text-xl font-black transition-colors drop-shadow-sm ${scrolled ? 'text-foreground' : 'text-white'}`}>
+                  Bibi<span className={scrolled ? 'text-primary' : 'text-amber-300'}>Motos</span>
                 </h1>
-                <p className={`text-xs font-semibold tracking-wider ${scrolled ? 'text-primary' : 'text-primary/80'}`}>
+                <p className={`text-[11px] font-bold tracking-[0.2em] ${scrolled ? 'text-amber-600' : 'text-amber-300/95'}`}>
                   FRANQUIAS
                 </p>
               </div>

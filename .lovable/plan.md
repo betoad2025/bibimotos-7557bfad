@@ -1,79 +1,42 @@
-Plano infalível de correção agora
+## Problema identificado
 
-Diagnóstico confirmado
+No print, o logo + texto "BibiMotos / FRANQUIAS" no canto superior esquerdo está praticamente invisível sobre o fundo roxo do hero:
 
-1. O banco atual do Lovable Cloud tem os dados principais:
-   - Usuário `grupobibitecnologia@gmail.com` existe.
-   - E-mail confirmado.
-   - Papel `super_admin` existe.
-   - Cidades `Salvador` e `Passos` existem e estão ativas.
-   - Franquias de Salvador e Passos existem e estão ativas.
+- A palavra **"Motos"** usa `text-primary` (roxo) sobre fundo roxo → some
+- O subtítulo **"FRANQUIAS"** usa `text-primary/80` (roxo translúcido) sobre roxo → ilegível
+- O ícone do logo tem um blur roxo atrás (`bg-primary/20 blur-xl`) que apaga ainda mais o símbolo
+- Falta um "selo" branco/dourado por trás do logo para destacá-lo do hero
 
-2. O erro `Invalid login credentials` não é falta de cadastro nem falta de permissão. É senha inválida no banco atual do Lovable Cloud. A senha usada no banco/ambiente antigo não migra automaticamente.
+Isso acontece em `src/pages/FranchiseLanding.tsx` (navbar do hero) e o mesmo padrão está em `src/components/landing/Navbar.tsx` e `Footer.tsx`.
 
-3. As imagens quebradas na tela de login não são problema do React em si. No endereço publicado pelo Lovable (`bibimotos.lovable.app`) as imagens carregam. No domínio `bibimotos.com.br`, os arquivos `/assets/...` estão retornando erro/404 ou SSL ruim, indicando deploy/domínio Hostinger desatualizado ou quebrado.
+## Correções
 
-4. `salvador.bibimotos.com.br` não está apontando para lugar nenhum agora. O erro é DNS `NXDOMAIN`: esse subdomínio não existe/resolve na internet. Isso não se corrige só com código; precisa apontamento de DNS/domínio.
+### 1. Navbar do FranchiseLanding (`src/pages/FranchiseLanding.tsx`)
 
-5. Há arquivos de GitHub Actions ainda forçando produção para infraestrutura antiga/externa:
-   - `.github/workflows/deploy.yml` sobrescreve variáveis de produção para um projeto antigo e faz deploy na Hostinger.
-   - `.github/workflows/deploy-functions.yml` também aponta funções/migrations para o projeto antigo.
-   Isso pode desfazer ou confundir a migração de volta para Lovable Cloud.
+Quando a navbar **não** está com scroll (em cima do hero roxo):
 
-Plano de execução
+- Trocar a cor de "Motos" e "FRANQUIAS" para **dourado** (`text-amber-300` / `text-amber-400`) — combina com a paleta da marca (roxo + dourado) e cria contraste forte
+- Adicionar um **fundo circular branco** atrás do logo (`bg-white rounded-full p-1.5 ring-2 ring-amber-300/60 shadow-xl`) para destacá-lo
+- Remover o blur roxo (`bg-primary/20 blur-xl`) que está apagando o símbolo, substituir por um glow dourado sutil
+- Aumentar o peso/tracking do "FRANQUIAS" e dar `drop-shadow` no título para legibilidade
 
-1. Destravar o acesso administrativo
-   - Implementar uma recuperação de senha por e-mail real para o login administrativo.
-   - Criar a rota `/reset-password`, hoje ausente, para permitir definir nova senha com segurança após o link de recuperação.
-   - Ajustar `/forgot-password` para oferecer recuperação por e-mail além do SMS atual.
-   - Após isso, você usará `grupobibitecnologia@gmail.com`, receberá o link e definirá uma nova senha válida no Lovable Cloud.
-   - Depois do reset, validar que o login leva ao `/dashboard` com papel `super_admin`.
+Quando **com scroll** (fundo branco/escuro):
 
-2. Corrigir a origem única do sistema: Lovable Cloud
-   - Remover/neutralizar os pontos de deploy que ainda forçam o banco antigo/externo.
-   - Atualizar os workflows para não sobrescrever `.env` com credenciais antigas.
-   - Parar deploy automático para Hostinger enquanto a produção oficial estiver no Lovable Cloud.
-   - Manter o app usando somente o cliente automático já configurado para o Lovable Cloud.
+- Manter "Motos" em `text-primary` (roxo fica ok no branco)
+- "FRANQUIAS" em `text-amber-600` para manter identidade dourada
+- Logo continua com selo branco circular
 
-3. Resolver imagens quebradas
-   - Confirmar que `logo-full.png` e `login-hero.jpg` continuam sendo importados pelo Vite corretamente.
-   - Corrigir o problema de publicação/domínio para que o HTML e a pasta `/assets` venham do mesmo build.
-   - Se o domínio continuar na Hostinger, ajustar o deploy da pasta `dist` e o roteamento SPA.
-   - Se a migração for 100% Lovable Cloud, apontar o domínio para Lovable e parar de servir arquivos pela Hostinger.
-   - Validar `/login` carregando logo e imagem hero sem ícone quebrado.
+### 2. Navbar global (`src/components/landing/Navbar.tsx`)
 
-4. Restaurar acesso às cidades
-   - Manter e validar o fallback que já funciona: `/cidade/salvador`.
-   - Validar a página de Salvador no ambiente Lovable: a cidade e franquia já existem no banco atual.
-   - Para `salvador.bibimotos.com.br`, corrigir DNS/domínio:
-     - conectar `bibimotos.com.br` no projeto Lovable;
-     - conectar também `www.bibimotos.com.br`;
-     - adicionar cada subdomínio de cidade, começando por `salvador.bibimotos.com.br` e `passos.bibimotos.com.br`;
-     - apontar os registros DNS conforme o painel do Lovable indicar.
-   - Importante: enquanto `salvador.bibimotos.com.br` continuar como `NXDOMAIN`, nenhum ajuste de código fará esse endereço abrir.
+Aplicar o mesmo selo branco circular ao redor do logo e ajustar "Motos" para `text-accent` (dourado) — hoje usa `text-accent` mas o componente sempre fica sobre fundo claro, então só precisa do selo para parecer profissional.
 
-5. Publicação e validação final
-   - Publicar/atualizar o app após os ajustes de frontend.
-   - Testar estes endereços:
-     - `/login`
-     - `/forgot-password`
-     - `/reset-password`
-     - `/dashboard`
-     - `/cidade/salvador`
-     - domínio principal após DNS
-     - subdomínio Salvador após DNS
-   - Conferir no painel administrativo:
-     - login super admin;
-     - listagem de cidades;
-     - franquias ativas;
-     - acesso sem misturar dados entre cidades/franquias.
+### 3. Footer (`src/components/landing/Footer.tsx`)
 
-Resultado esperado
+Trocar o quadrado roxo + ícone Bike pelo logo real (`@/assets/logo-simbolo.png`) com o mesmo selo branco circular, garantindo identidade consistente em todo o site.
 
-- Você consegue redefinir a senha e entrar no painel administrativo.
-- A página de login volta a exibir logo e imagem corretamente.
-- As cidades funcionam pelo caminho `/cidade/salvador` imediatamente após publicação.
-- Os subdomínios como `salvador.bibimotos.com.br` funcionam assim que DNS/domínio estiverem apontados para Lovable.
-- O projeto deixa de alternar entre banco antigo, Hostinger e Lovable Cloud, evitando regressões.
+## Resultado esperado
 
-Ao aprovar este plano, eu sigo para a implementação dos ajustes de código e configuração do projeto. A parte de DNS/domínio que depende do registrador/painel de domínio eu deixarei com os registros exatos e a ordem correta para aplicar.
+- Logo nítido, com aro dourado e fundo branco, destacando o símbolo da moto
+- "Bibi" branco + "Motos" dourado + "FRANQUIAS" dourado claro com tracking — leitura imediata sobre o roxo
+- Visual premium, alinhado à identidade roxo/dourado da Bibi Motos
+- Mesma assinatura visual em navbar do hero, navbar global e footer
