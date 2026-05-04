@@ -530,6 +530,81 @@ export function UsersManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Role + Franchise Dialog */}
+      <Dialog open={!!addRoleUser} onOpenChange={(o) => !o && setAddRoleUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Adicionar papel
+            </DialogTitle>
+            <DialogDescription>
+              {addRoleUser?.full_name} ({addRoleUser?.email})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Papel</Label>
+              <Select value={newRole} onValueChange={(v) => { setNewRole(v); setNewRoleFranchiseId(""); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o papel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {addRoleUser && !getUserRoles(addRoleUser.user_id).includes("super_admin") && (
+                    <SelectItem value="super_admin">Super Admin (global)</SelectItem>
+                  )}
+                  {addRoleUser && !getUserRoles(addRoleUser.user_id).includes("franchise_admin") && (
+                    <SelectItem value="franchise_admin">Admin / Dono de Franquia</SelectItem>
+                  )}
+                  <SelectItem value="driver">Motorista</SelectItem>
+                  <SelectItem value="passenger">Passageiro</SelectItem>
+                  <SelectItem value="merchant">Lojista</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {newRole && newRole !== "super_admin" && (
+              <div className="space-y-2">
+                <Label>Franquia / Cidade</Label>
+                <Select value={newRoleFranchiseId} onValueChange={setNewRoleFranchiseId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a franquia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {franchises.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                        {newRole === "franchise_admin" && f.owner_id ? " (já tem dono)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  O usuário será vinculado à cidade desta franquia.
+                </p>
+              </div>
+            )}
+
+            {newRole === "franchise_admin" && newRoleFranchiseId &&
+              franchises.find((f) => f.id === newRoleFranchiseId)?.owner_id && (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg text-sm">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  Esta franquia já possui dono. A propriedade será transferida.
+                </div>
+              )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddRoleUser(null)}>Cancelar</Button>
+            <Button
+              onClick={handleAddRoleWithFranchise}
+              disabled={!newRole || (newRole !== "super_admin" && !newRoleFranchiseId) || savingRole}
+            >
+              {savingRole ? "Salvando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
