@@ -91,21 +91,21 @@ export function StatsCards({ stats }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-3 sm:gap-4">
       {cards.map((card, index) => (
-        <Card key={index} className={`bg-gradient-to-br ${card.gradient} text-white relative overflow-hidden`}>
-          <CardContent className="p-4">
+        <Card key={index} className={`bg-gradient-to-br ${card.gradient} text-white relative overflow-hidden min-w-0`}>
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <card.icon className="h-8 w-8 opacity-80" />
+              <card.icon className="h-6 w-6 sm:h-8 sm:w-8 opacity-80 shrink-0" />
               {card.isPulsing ? (
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
               ) : (
                 <ArrowUpRight className="h-4 w-4 opacity-60" />
               )}
             </div>
-            <p className="text-3xl font-bold mt-2">{card.value}</p>
-            <p className="text-sm font-medium opacity-90">{card.label}</p>
-            <p className="text-xs opacity-60 mt-1">{card.trend}</p>
+            <p className="text-2xl sm:text-3xl font-bold mt-2 truncate">{card.value}</p>
+            <p className="text-xs sm:text-sm font-medium opacity-90 truncate">{card.label}</p>
+            <p className="text-[10px] sm:text-xs opacity-60 mt-1 truncate">{card.trend}</p>
           </CardContent>
           {/* Decorative element */}
           <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-white/10" />

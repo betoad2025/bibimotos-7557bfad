@@ -147,12 +147,12 @@ export default function SuperAdminDashboard() {
             <span className="font-semibold text-primary">Bibi Motos</span>
           </header>
 
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
             <div className="hidden md:block">
               <SuperAdminHeader pendingLeads={stats.pendingLeads} />
             </div>
 
-            <div className="p-4 md:p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-6 max-w-full min-w-0">
               <StatsCards stats={stats} />
               {renderContent()}
             </div>
