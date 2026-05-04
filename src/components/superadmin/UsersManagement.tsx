@@ -28,7 +28,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Search, Shield, Bike, User, Store, Building2, Crown, AlertTriangle, MapPin } from "lucide-react";
+import { Users, Search, Shield, Bike, User, Store, Building2, Crown, AlertTriangle, MapPin, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -72,6 +81,10 @@ export function UsersManagement() {
   const [loading, setLoading] = useState(true);
   const [convertUser, setConvertUser] = useState<Profile | null>(null);
   const [convertFranchiseId, setConvertFranchiseId] = useState("");
+  const [addRoleUser, setAddRoleUser] = useState<Profile | null>(null);
+  const [newRole, setNewRole] = useState<string>("");
+  const [newRoleFranchiseId, setNewRoleFranchiseId] = useState<string>("");
+  const [savingRole, setSavingRole] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -180,6 +193,100 @@ export function UsersManagement() {
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Erro ao adicionar papel");
+    }
+  };
+
+  const handleAddRoleWithFranchise = async () => {
+    if (!addRoleUser || !newRole) return;
+    if (newRole !== "super_admin" && !newRoleFranchiseId) {
+      toast.error("Selecione a franquia / cidade");
+      return;
+    }
+    setSavingRole(true);
+    try {
+      const userId = addRoleUser.user_id;
+      const role = newRole as any;
+      const franchise = franchises.find((f) => f.id === newRoleFranchiseId);
+
+      // 1. Insere papel (idempotente)
+      const existingRoles = getUserRoles(userId);
+      if (!existingRoles.includes(role)) {
+        const { error: roleErr } = await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role });
+        if (roleErr) throw roleErr;
+      }
+
+      // 2. Vincula entidade conforme papel
+      if (role === "franchise_admin" && franchise) {
+        const { error: ownErr } = await supabase
+          .from("franchises")
+          .update({ owner_id: userId })
+          .eq("id", franchise.id);
+        if (ownErr) throw ownErr;
+      } else if (role === "driver" && franchise) {
+        const { data: existing } = await supabase
+          .from("drivers")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("franchise_id", franchise.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("drivers").insert({
+            user_id: userId,
+            franchise_id: franchise.id,
+            is_approved: false,
+          } as any);
+        }
+      } else if (role === "passenger" && franchise) {
+        const { data: existing } = await supabase
+          .from("passengers")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("franchise_id", franchise.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("passengers").insert({
+            user_id: userId,
+            franchise_id: franchise.id,
+          } as any);
+        }
+      } else if (role === "merchant" && franchise) {
+        const { data: existing } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("franchise_id", franchise.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("merchants").insert({
+            user_id: userId,
+            franchise_id: franchise.id,
+            is_approved: false,
+            business_name: addRoleUser.full_name || "Meu Negócio",
+            business_address: "",
+          } as any);
+        }
+      }
+
+      // 3. Reforça binding de cidade no profile
+      if (franchise) {
+        const cityName = franchise.name.replace("Bibi Motos ", "");
+        await supabase
+          .from("profiles")
+          .update({ city: cityName })
+          .eq("user_id", userId);
+      }
+
+      toast.success(`${getRoleLabel(role)} vinculado${franchise ? ` à ${franchise.name}` : ""}!`);
+      setAddRoleUser(null);
+      setNewRole("");
+      setNewRoleFranchiseId("");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao adicionar papel");
+    } finally {
+      setSavingRole(false);
     }
   };
 
