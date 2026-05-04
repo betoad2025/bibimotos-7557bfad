@@ -93,7 +93,13 @@ Deno.serve(async (req) => {
         { onConflict: "user_id,role" }
       );
 
-    // 2. Transfer franchise ownership
+    // 2. Transfer franchise ownership and capture city info for binding
+    const { data: franchiseRow } = await supabase
+      .from("franchises")
+      .select("id, name, cities(name, state)")
+      .eq("id", invite.franchise_id)
+      .maybeSingle();
+
     await supabase
       .from("franchises")
       .update({ owner_id: user.id })
@@ -135,10 +141,17 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    const cityName = (franchiseRow as any)?.cities?.name ?? null;
+    const stateName = (franchiseRow as any)?.cities?.state ?? null;
+
     if (profile) {
       await supabase
         .from("profiles")
-        .update({ profile_complete: false })
+        .update({
+          profile_complete: false,
+          ...(cityName ? { city: cityName } : {}),
+          ...(stateName ? { state: stateName } : {}),
+        })
         .eq("user_id", user.id);
     } else {
       await supabase.from("profiles").insert({
@@ -146,6 +159,8 @@ Deno.serve(async (req) => {
         full_name: user.user_metadata?.full_name || "",
         email: user.email || "",
         profile_complete: false,
+        ...(cityName ? { city: cityName } : {}),
+        ...(stateName ? { state: stateName } : {}),
       });
     }
 
