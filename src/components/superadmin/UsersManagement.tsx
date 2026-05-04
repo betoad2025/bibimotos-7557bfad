@@ -28,7 +28,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Search, Shield, Bike, User, Store, Building2, Crown, AlertTriangle, MapPin } from "lucide-react";
+import { Users, Search, Shield, Bike, User, Store, Building2, Crown, AlertTriangle, MapPin, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -72,6 +81,10 @@ export function UsersManagement() {
   const [loading, setLoading] = useState(true);
   const [convertUser, setConvertUser] = useState<Profile | null>(null);
   const [convertFranchiseId, setConvertFranchiseId] = useState("");
+  const [addRoleUser, setAddRoleUser] = useState<Profile | null>(null);
+  const [newRole, setNewRole] = useState<string>("");
+  const [newRoleFranchiseId, setNewRoleFranchiseId] = useState<string>("");
+  const [savingRole, setSavingRole] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -183,6 +196,100 @@ export function UsersManagement() {
     }
   };
 
+  const handleAddRoleWithFranchise = async () => {
+    if (!addRoleUser || !newRole) return;
+    if (newRole !== "super_admin" && !newRoleFranchiseId) {
+      toast.error("Selecione a franquia / cidade");
+      return;
+    }
+    setSavingRole(true);
+    try {
+      const userId = addRoleUser.user_id;
+      const role = newRole as any;
+      const franchise = franchises.find((f) => f.id === newRoleFranchiseId);
+
+      // 1. Insere papel (idempotente)
+      const existingRoles = getUserRoles(userId);
+      if (!existingRoles.includes(role)) {
+        const { error: roleErr } = await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role });
+        if (roleErr) throw roleErr;
+      }
+
+      // 2. Vincula entidade conforme papel
+      if (role === "franchise_admin" && franchise) {
+        const { error: ownErr } = await supabase
+          .from("franchises")
+          .update({ owner_id: userId })
+          .eq("id", franchise.id);
+        if (ownErr) throw ownErr;
+      } else if (role === "driver" && franchise) {
+        const { data: existing } = await supabase
+          .from("drivers")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("franchise_id", franchise.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("drivers").insert({
+            user_id: userId,
+            franchise_id: franchise.id,
+            is_approved: false,
+          } as any);
+        }
+      } else if (role === "passenger" && franchise) {
+        const { data: existing } = await supabase
+          .from("passengers")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("franchise_id", franchise.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("passengers").insert({
+            user_id: userId,
+            franchise_id: franchise.id,
+          } as any);
+        }
+      } else if (role === "merchant" && franchise) {
+        const { data: existing } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("franchise_id", franchise.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("merchants").insert({
+            user_id: userId,
+            franchise_id: franchise.id,
+            is_approved: false,
+            business_name: addRoleUser.full_name || "Meu Negócio",
+            business_address: "",
+          } as any);
+        }
+      }
+
+      // 3. Reforça binding de cidade no profile
+      if (franchise) {
+        const cityName = franchise.name.replace("Bibi Motos ", "");
+        await supabase
+          .from("profiles")
+          .update({ city: cityName })
+          .eq("user_id", userId);
+      }
+
+      toast.success(`${getRoleLabel(role)} vinculado${franchise ? ` à ${franchise.name}` : ""}!`);
+      setAddRoleUser(null);
+      setNewRole("");
+      setNewRoleFranchiseId("");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao adicionar papel");
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
   const handleRemoveRole = async (userId: string, role: "super_admin" | "franchise_admin" | "driver" | "passenger" | "merchant") => {
     if (!confirm(`Remover papel ${getRoleLabel(role)}?`)) return;
     try {
@@ -256,7 +363,7 @@ export function UsersManagement() {
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue placeholder="Filtrar por papel" />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,19 +376,20 @@ export function UsersManagement() {
                   <SelectItem value="no_role">Sem papel</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar usuário..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-64"
+                  className="pl-9 w-full sm:w-64"
                 />
               </div>
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="w-full overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -342,26 +450,18 @@ export function UsersManagement() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => { setConvertUser(profile); setConvertFranchiseId(""); }}
-                          title="Converter em Dono de Franquia"
-                          className="text-amber-600 hover:text-amber-700"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setAddRoleUser(profile);
+                            setNewRole("");
+                            setNewRoleFranchiseId("");
+                          }}
+                          className="whitespace-nowrap"
                         >
-                          <Crown className="h-4 w-4" />
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add papel
                         </Button>
-                        <Select onValueChange={(role) => handleAddRole(profile.user_id, role as any)}>
-                          <SelectTrigger className="w-36">
-                            <SelectValue placeholder="Add papel" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {!roles.includes("super_admin") && <SelectItem value="super_admin">Super Admin</SelectItem>}
-                            {!roles.includes("franchise_admin") && <SelectItem value="franchise_admin">Admin Franquia</SelectItem>}
-                            {!roles.includes("driver") && <SelectItem value="driver">Motorista</SelectItem>}
-                            {!roles.includes("passenger") && <SelectItem value="passenger">Passageiro</SelectItem>}
-                            {!roles.includes("merchant") && <SelectItem value="merchant">Lojista</SelectItem>}
-                          </SelectContent>
-                        </Select>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -376,6 +476,7 @@ export function UsersManagement() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -429,6 +530,81 @@ export function UsersManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Role + Franchise Dialog */}
+      <Dialog open={!!addRoleUser} onOpenChange={(o) => !o && setAddRoleUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Adicionar papel
+            </DialogTitle>
+            <DialogDescription>
+              {addRoleUser?.full_name} ({addRoleUser?.email})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Papel</Label>
+              <Select value={newRole} onValueChange={(v) => { setNewRole(v); setNewRoleFranchiseId(""); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o papel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {addRoleUser && !getUserRoles(addRoleUser.user_id).includes("super_admin") && (
+                    <SelectItem value="super_admin">Super Admin (global)</SelectItem>
+                  )}
+                  {addRoleUser && !getUserRoles(addRoleUser.user_id).includes("franchise_admin") && (
+                    <SelectItem value="franchise_admin">Admin / Dono de Franquia</SelectItem>
+                  )}
+                  <SelectItem value="driver">Motorista</SelectItem>
+                  <SelectItem value="passenger">Passageiro</SelectItem>
+                  <SelectItem value="merchant">Lojista</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {newRole && newRole !== "super_admin" && (
+              <div className="space-y-2">
+                <Label>Franquia / Cidade</Label>
+                <Select value={newRoleFranchiseId} onValueChange={setNewRoleFranchiseId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a franquia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {franchises.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                        {newRole === "franchise_admin" && f.owner_id ? " (já tem dono)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  O usuário será vinculado à cidade desta franquia.
+                </p>
+              </div>
+            )}
+
+            {newRole === "franchise_admin" && newRoleFranchiseId &&
+              franchises.find((f) => f.id === newRoleFranchiseId)?.owner_id && (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg text-sm">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  Esta franquia já possui dono. A propriedade será transferida.
+                </div>
+              )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddRoleUser(null)}>Cancelar</Button>
+            <Button
+              onClick={handleAddRoleWithFranchise}
+              disabled={!newRole || (newRole !== "super_admin" && !newRoleFranchiseId) || savingRole}
+            >
+              {savingRole ? "Salvando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
