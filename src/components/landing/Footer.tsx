@@ -1,5 +1,6 @@
-import { Bike, Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react";
+import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
+import logoImage from "@/assets/logo-simbolo.png";
 
 export const Footer = () => {
   return (
@@ -8,9 +9,9 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div>
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <Bike className="h-6 w-6 text-primary-foreground" />
+            <Link to="/" className="flex items-center gap-2.5 mb-4 group">
+              <div className="h-11 w-11 rounded-full bg-white ring-2 ring-accent/60 shadow-md flex items-center justify-center p-1">
+                <img src={logoImage} alt="Bibi Motos" className="h-full w-full object-contain" />
               </div>
               <span className="text-xl font-bold">
                 <span className="text-foreground">Bibi</span>
